@@ -13,7 +13,7 @@ export function calculateCost(usage: TokenUsage, modelId: string): string | null
 
   try {
     const parsePrice = (priceStr: string) => {
-      // Remove " / M tokens" and "￥"
+      // 移除 " / M tokens" 和 "￥"
       return parseFloat(priceStr.replace('￥', '').replace(' / M tokens', ''));
     };
 

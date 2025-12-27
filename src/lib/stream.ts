@@ -57,7 +57,7 @@ export async function streamChatCompletion({
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
       
-      // Keep the last part in buffer if it doesn't end with newline
+      // 如果最后一部分不以换行符结尾，则保留在缓冲区中
       buffer = lines.pop() || '';
 
       for (const line of lines) {
@@ -72,7 +72,7 @@ export async function streamChatCompletion({
         try {
           const data = JSON.parse(dataStr);
           
-          // Handle usage data
+          // 处理消耗数据
           if (data.usage && onUsage) {
             onUsage(data.usage);
           }

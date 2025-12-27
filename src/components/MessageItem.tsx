@@ -17,7 +17,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
 
-  if (isSystem) return null; // Optionally hide system messages or style them differently
+  if (isSystem) return null; // 可选：隐藏系统消息或以不同样式显示
 
   const cost = !isUser && message.usage ? calculateCost(message.usage, config.model) : null;
 
@@ -87,21 +87,21 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
           )}
         </div>
 
-        {/* Usage Stats */}
+        {/* 消耗统计 */}
         {!isUser && message.usage && (
           <div className="mt-1 flex items-center gap-2 text-[10px] text-gray-400 select-none flex-wrap">
-            <div className="flex items-center gap-0.5" title="Total Tokens">
+            <div className="flex items-center gap-0.5" title="总 Tokens">
               <Zap className="w-3 h-3" />
               <span>{message.usage.total_tokens} tokens</span>
             </div>
             <span>•</span>
-            <span title="Input Tokens">In: {message.usage.prompt_tokens}</span>
+            <span title="输入 Tokens">In: {message.usage.prompt_tokens}</span>
             <span>•</span>
-            <span title="Output Tokens">Out: {message.usage.completion_tokens}</span>
+            <span title="输出 Tokens">Out: {message.usage.completion_tokens}</span>
             {cost && (
               <>
                 <span>•</span>
-                <div className="flex items-center gap-0.5 text-yellow-600/80" title="Estimated Cost">
+                <div className="flex items-center gap-0.5 text-yellow-600/80" title="估算消耗">
                   <Coins className="w-3 h-3" />
                   <span>{cost}</span>
                 </div>
