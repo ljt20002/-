@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Eraser, Image as ImageIcon, X, Square } from 'lucide-react';
+import { Send, Eraser, Image as ImageIcon, X, Square, Globe } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useConfigStore } from '../store/useConfigStore';
 
 interface ChatInputProps {
   onSend: (content: string, images: string[]) => void;
@@ -12,6 +13,7 @@ interface ChatInputProps {
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, onAbort, isLoading, disabled, supportVision }) => {
+  const { config, setConfig } = useConfigStore();
   const [content, setContent] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -104,24 +106,40 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, onAbort, 
             </div>
           )}
           
-          <div className="flex items-end">
-            <div className={cn("transition-all duration-200", !supportVision && "w-0 overflow-hidden opacity-0")}>
+          <div className="flex items-center min-h-[52px]">
+            <div className="flex items-center h-full">
+              <div className={cn("transition-all duration-200", !supportVision && "w-0 overflow-hidden opacity-0")}>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-3 text-gray-400 hover:text-gray-600 transition-colors"
+                  title="上传图片"
+                  disabled={isLoading || disabled || !supportVision}
+                >
+                  <ImageIcon className="w-5 h-5" />
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                />
+              </div>
+
               <button
-                onClick={() => fileInputRef.current?.click()}
-                className="p-3 text-gray-400 hover:text-gray-600 transition-colors"
-                title="上传图片"
-                disabled={isLoading || disabled || !supportVision}
+                onClick={() => setConfig({ searchEnabled: !config.searchEnabled })}
+                className={cn(
+                  "p-3 transition-all duration-200 rounded-lg",
+                  config.searchEnabled 
+                    ? "text-blue-600 bg-blue-50" 
+                    : "text-gray-400 hover:text-gray-600"
+                )}
+                title={config.searchEnabled ? "关闭联网搜索" : "开启联网搜索"}
+                disabled={isLoading || disabled}
               >
-                <ImageIcon className="w-5 h-5" />
+                <Globe className={cn("w-5 h-5", config.searchEnabled && "animate-pulse")} />
               </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-                accept="image/*"
-                multiple
-                className="hidden"
-              />
             </div>
             
             <textarea

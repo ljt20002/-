@@ -7,6 +7,7 @@ import { BillingBar } from '../components/BillingBar';
 import { Empty } from '../components/Empty';
 import { SettingsDrawer } from '../components/SettingsDrawer';
 import { streamChatCompletion } from '../lib/stream';
+import { searchWeb, analyzeSearchIntent, evaluateSearchSufficiency } from '../lib/search';
 import { AVAILABLE_MODELS } from '../lib/constants';
 import { Settings as SettingsIcon, Menu } from 'lucide-react';
 import { MessageStatus, ContentPart } from '../types';
@@ -91,7 +92,10 @@ export default function Home({ onToggleSidebar }: HomeProps) {
 
     // Capture valid history messages (exclude errors/interrupted)
     const validHistory = messages.filter(m => m.status === MessageStatus.SENT);
-    const systemPrompt = currentSession?.systemPrompt || config.systemPrompt || 'You are a helpful AI assistant.';
+    const baseSystemPrompt = currentSession?.systemPrompt || config.systemPrompt || 'You are a helpful AI assistant.';
+    const now = new Date();
+    const today = `${now.toLocaleDateString()} ${['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][now.getDay()]}`;
+    const systemPrompt = `当前日期: ${today}\n\n${baseSystemPrompt}`;
 
     // Add user message
     addMessage('user', finalContent);
@@ -103,12 +107,73 @@ export default function Home({ onToggleSidebar }: HomeProps) {
 
     try {
       const signal = getSignal(sessionId!);
+
+      // Perform web search if enabled
+      let searchResults = '';
+      if (config.searchEnabled && config.searchApiKey && content.trim()) {
+        try {
+          appendContentToMessage(botMessageId, '> 🤖 正在分析搜索意图...\n\n');
+          const initialQueries = await analyzeSearchIntent(content, config);
+          
+          if (initialQueries && initialQueries.length > 0) {
+            let iteration = 0;
+            const maxIterations = 2; // 最多进行2轮搜索迭代
+            let currentQueries = initialQueries;
+            
+            while (iteration < maxIterations) {
+              iteration++;
+              const roundInfo = maxIterations > 1 ? ` (第 ${iteration} 轮)` : '';
+              appendContentToMessage(botMessageId, `> 🔍 正在执行搜索${roundInfo}: ${currentQueries.join(', ')}...\n\n`);
+              
+              // 并行执行当前轮次的所有搜索词
+              const roundResults = await Promise.all(
+                currentQueries.map(q => searchWeb(q))
+              );
+              const roundResultsText = roundResults.join('\n\n');
+              searchResults += (searchResults ? '\n\n' : '') + roundResultsText;
+
+              if (iteration < maxIterations) {
+                appendContentToMessage(botMessageId, `> 🧠 正在评估搜索结果是否充足...\n\n`);
+                const evaluation = await evaluateSearchSufficiency(content, searchResults, config);
+                
+                if (evaluation.sufficient) {
+                  appendContentToMessage(botMessageId, `> ✅ 信息已充足，开始生成回答...\n\n`);
+                  break;
+                } else if (evaluation.nextQuery) {
+                  appendContentToMessage(botMessageId, `> 💡 发现信息缺口，追加搜索: ${evaluation.nextQuery}...\n\n`);
+                  currentQueries = [evaluation.nextQuery];
+                } else {
+                  break;
+                }
+              } else {
+                appendContentToMessage(botMessageId, `> ✅ 搜索轮次已达上限，开始总结...\n\n`);
+              }
+            }
+          } else {
+            appendContentToMessage(botMessageId, '> ⚡ 意图识别：无需联网，直接回答...\n\n');
+          }
+        } catch (searchError) {
+          console.error('Agentic search failed:', searchError);
+          appendContentToMessage(botMessageId, '> ❌ 联网搜索过程出错，将基于现有知识回答...\n\n');
+        }
+      }
+
+      const promptWithSearch = searchResults 
+        ? (Array.isArray(finalContent)
+            ? [
+                { type: 'text' as const, text: `以下是关于“${content}”的网络搜索结果：\n\n${searchResults}\n\n请结合以上资料回答用户的问题。` },
+                ...finalContent.filter(p => p.type === 'image_url')
+              ]
+            : `以下是关于“${content}”的网络搜索结果：\n\n${searchResults}\n\n请结合以上资料回答用户的问题。`
+          )
+        : finalContent;
+
       await streamChatCompletion({
         config: { ...config, model: sessionModel },
         messages: [
           { role: 'system', content: systemPrompt },
           ...validHistory, 
-          { role: 'user', content: finalContent }
+          { role: 'user', content: promptWithSearch }
         ], 
         signal,
         onChunk: (chunk) => {

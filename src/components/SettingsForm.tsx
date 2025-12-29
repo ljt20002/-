@@ -177,6 +177,40 @@ export const SettingsForm: React.FC = () => {
             <h3 className="text-sm font-bold text-gray-900">全局默认设置</h3>
           </div>
 
+          <div className="flex items-center justify-between p-3 bg-blue-50/50 rounded-lg border border-blue-100">
+            <div className="flex flex-col gap-0.5">
+              <label htmlFor="searchEnabled" className="text-sm font-bold text-blue-900 cursor-pointer">
+                联网搜索增强 (Serper)
+              </label>
+              <p className="text-[10px] text-blue-700/70 italic">启用后模型将实时搜索网页内容</p>
+            </div>
+            <input
+              type="checkbox"
+              id="searchEnabled"
+              name="searchEnabled"
+              checked={config.searchEnabled}
+              onChange={(e) => setConfig({ searchEnabled: e.target.checked })}
+              className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+            />
+          </div>
+
+          {config.searchEnabled && (
+            <div>
+              <label htmlFor="searchApiKey" className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wider">
+                Serper API Key
+              </label>
+              <input
+                type="password"
+                id="searchApiKey"
+                name="searchApiKey"
+                value={config.searchApiKey}
+                onChange={handleChange}
+                placeholder="Serper API Key..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
+              />
+            </div>
+          )}
+
           <div>
             <label htmlFor="apiKey" className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wider">
               API Key

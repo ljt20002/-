@@ -50,6 +50,8 @@ export interface AppConfig {
   model: string;
   baseUrl: string;
   systemPrompt?: string;
+  searchEnabled: boolean;
+  searchApiKey?: string;
 }
 
 export interface ModelOption {
