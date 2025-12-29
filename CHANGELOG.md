@@ -1,3 +1,19 @@
+# Changelog
+
+## [1.1.0](https://github.com/ljt20002/-/compare/v1.0.0...v1.1.0) (2025-12-29)
+
+### ✨ 新功能
+
+* add GitHub Actions deployment and update documentation ([511e95b](https://github.com/ljt20002/-/commit/511e95b04abe8beb6f5afbe91ddcabc33e0d841f))
+
+### 🐛 缺陷修复
+
+* 配置基础路径和路由模式以支持静态部署 ([c52d37d](https://github.com/ljt20002/-/commit/c52d37d7383056cd7477caf76784ebae21a038e0))
+
+### 📝 文档更新
+
+* update README with project background and versioning guide, and localize comments ([eecb489](https://github.com/ljt20002/-/commit/eecb48963826066d12f6690169cd6c80ff054772))
+
 # 更新日志
 
 All notable changes to this project will be documented in this file.
