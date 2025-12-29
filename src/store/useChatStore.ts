@@ -4,7 +4,7 @@ import { ChatMessage, ContentPart, MessageStatus, Role, TokenUsage } from '../ty
 interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
-  addMessage: (role: Role, content: string | ContentPart[]) => string;
+  addMessage: (role: Role, content: string | ContentPart[], model?: string) => string;
   updateMessageContent: (id: string, content: string | ContentPart[]) => void;
   updateMessageStatus: (id: string, status: MessageStatus, error?: string) => void;
   setMessageUsage: (id: string, usage: TokenUsage) => void;
@@ -17,7 +17,7 @@ export const useChatStore = create<ChatState>((set) => ({
   messages: [],
   isLoading: false,
 
-  addMessage: (role: Role, content: string | ContentPart[]) => {
+  addMessage: (role: Role, content: string | ContentPart[], model?: string) => {
     const id = crypto.randomUUID();
     const newMessage: ChatMessage = {
       id,
@@ -25,6 +25,7 @@ export const useChatStore = create<ChatState>((set) => ({
       content,
       timestamp: Date.now(),
       status: role === 'user' ? MessageStatus.SENT : MessageStatus.PENDING,
+      model,
     };
     set((state) => ({ messages: [...state.messages, newMessage] }));
     return id;

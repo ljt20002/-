@@ -32,8 +32,8 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     name: 'Qwen Flash 2025',
     description: '阿里云通义千问 Flash 版本，兼顾速度与成本，适合高频次对话场景。',
     provider: 'Alibaba',
-    inputPrice: '￥0.012',
-    outputPrice: '￥0.12',
+    inputPrice: '￥0.12',
+    outputPrice: '￥1.2',
   },
   {
     id: 'DeepSeek-V3.2-Fast',

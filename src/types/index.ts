@@ -31,6 +31,7 @@ export interface ChatMessage {
   status: MessageStatus;
   error?: string;
   usage?: TokenUsage;
+  model?: string;
 }
 
 export interface AppConfig {

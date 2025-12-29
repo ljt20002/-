@@ -83,7 +83,7 @@ export default function Home() {
     addMessage('user', finalContent);
 
     // Add initial bot message
-    const botMessageId = addMessage('assistant', '');
+    const botMessageId = addMessage('assistant', '', config.model);
     setLoading(true);
 
     try {

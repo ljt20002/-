@@ -8,8 +8,9 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ChatMessage } from '../types';
 import { cn, calculateCost } from '../lib/utils';
-import { User, Bot, AlertCircle, Zap, Coins } from 'lucide-react';
+import { User, Bot, AlertCircle, Zap, Coins, Cpu } from 'lucide-react';
 import { useConfigStore } from '../store/useConfigStore';
+import { AVAILABLE_MODELS } from '../lib/constants';
 
 interface MessageItemProps {
   message: ChatMessage;
@@ -50,9 +51,13 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({ message }) => {
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
 
+  const displayModel = message.model || config.model;
+  const modelInfo = AVAILABLE_MODELS.find(m => m.id === displayModel);
+  const modelName = modelInfo ? modelInfo.name : displayModel;
+
   if (isSystem) return null;
 
-  const cost = !isUser && message.usage ? calculateCost(message.usage, config.model) : null;
+  const cost = !isUser && message.usage ? calculateCost(message.usage, displayModel) : null;
   
   const hasContent = typeof message.content === 'string' 
     ? !!message.content 
@@ -121,23 +126,32 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({ message }) => {
         </div>
 
         {/* 消耗统计 */}
-        {!isUser && message.usage && (
+        {!isUser && (
           <div className="mt-1 flex items-center gap-2 text-[10px] text-gray-400 select-none flex-wrap">
-            <div className="flex items-center gap-0.5" title="总 Tokens">
-              <Zap className="w-3 h-3" />
-              <span>{message.usage.total_tokens} tokens</span>
+            <div className="flex items-center gap-0.5" title="模型">
+              <Cpu className="w-3 h-3" />
+              <span>{modelName}</span>
             </div>
-            <span>•</span>
-            <span title="输入 Tokens">In: {message.usage.prompt_tokens}</span>
-            <span>•</span>
-            <span title="输出 Tokens">Out: {message.usage.completion_tokens}</span>
-            {cost && (
+            {message.usage && (
               <>
                 <span>•</span>
-                <div className="flex items-center gap-0.5 text-yellow-600/80" title="估算消耗">
-                  <Coins className="w-3 h-3" />
-                  <span>{cost}</span>
+                <div className="flex items-center gap-0.5" title="总 Tokens">
+                  <Zap className="w-3 h-3" />
+                  <span>{message.usage.total_tokens} tokens</span>
                 </div>
+                <span>•</span>
+                <span title="输入 Tokens">In: {message.usage.prompt_tokens}</span>
+                <span>•</span>
+                <span title="输出 Tokens">Out: {message.usage.completion_tokens}</span>
+                {cost && (
+                  <>
+                    <span>•</span>
+                    <div className="flex items-center gap-0.5 text-yellow-600/80" title="估算消耗">
+                      <Coins className="w-3 h-3" />
+                      <span>{cost}</span>
+                    </div>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -162,6 +176,7 @@ export const MessageItem = memo(MessageItemComponent, (prev, next) => {
   return (
     prev.message.content === next.message.content &&
     prev.message.status === next.message.status &&
+    prev.message.model === next.message.model &&
     prev.message.usage?.total_tokens === next.message.usage?.total_tokens
   );
 });

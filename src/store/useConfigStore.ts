@@ -11,7 +11,7 @@ interface ConfigState {
 const defaultConfig: AppConfig = {
   apiKey: '',
   model: 'gemini-3-flash-preview',
-  baseUrl: 'https://api.openai.com/v1',
+  baseUrl: 'https://www.dmxapi.cn/v1/',
   systemPrompt: 'You are a helpful AI assistant.',
 };
 
