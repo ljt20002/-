@@ -77,7 +77,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, onAbort, 
 
   return (
     <div className="border-t border-gray-200 bg-white p-4">
-      <div className="max-w-4xl mx-auto flex items-end gap-3">
+      <div className="max-w-4xl mx-auto flex items-end gap-4">
         <button
             onClick={onClear}
             className="p-3 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors"
@@ -131,7 +131,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, onAbort, 
               onKeyDown={handleKeyDown}
               disabled={disabled}
               placeholder="输入您的问题..."
-              className="flex-1 max-h-[200px] min-h-[52px] py-3 pr-12 bg-transparent border-none resize-none focus:ring-0 outline-none focus:outline-none text-sm disabled:opacity-50 placeholder:text-gray-400"
+              className={cn(
+                "flex-1 max-h-[200px] min-h-[52px] py-3 pr-12 bg-transparent border-none resize-none focus:ring-0 outline-none focus:outline-none text-sm disabled:opacity-50 placeholder:text-gray-400",
+                !supportVision && "pl-4"
+              )}
               rows={1}
             />
           </div>
@@ -160,7 +163,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, onAbort, 
           )}
         </div>
       </div>
-      <div className="text-center mt-2 text-xs text-gray-400">
+      <div className="text-center mt-3 text-xs text-gray-400">
         按 Enter 发送，Shift + Enter 换行
       </div>
     </div>
