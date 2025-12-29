@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useConfigStore } from '../store/useConfigStore';
 import { useChatStore } from '../store/useChatStore';
 import { RotateCcw, ChevronDown, Check } from 'lucide-react';
-import { AVAILABLE_MODELS, ModelInfo } from '../lib/constants';
+import { AVAILABLE_MODELS } from '../lib/constants';
 import { cn } from '../lib/utils';
 
 export const SettingsForm: React.FC = () => {
