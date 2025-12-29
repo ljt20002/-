@@ -142,7 +142,7 @@ export const SettingsForm: React.FC = () => {
               {currentSessionId && (
                 <button
                   type="button"
-                  onClick={() => updateSessionSystemPrompt(currentSessionId, config.systemPrompt)}
+                  onClick={() => updateSessionSystemPrompt(currentSessionId, config.systemPrompt || '')}
                   className="text-[10px] text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors font-medium"
                   title="恢复为全局默认提示词"
                 >
