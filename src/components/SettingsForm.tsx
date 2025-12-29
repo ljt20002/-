@@ -9,7 +9,6 @@ export const SettingsForm: React.FC = () => {
   const { config, setConfig, resetConfig } = useConfigStore();
   const { sessions, currentSessionId, updateSessionModel, updateSessionSystemPrompt } = useChatStore();
   const [isModelOpen, setIsModelOpen] = useState(false);
-  const [hoveredModel, setHoveredModel] = useState<ModelInfo | null>(null);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
 
   const currentSession = sessions.find(s => s.id === currentSessionId);
@@ -90,45 +89,47 @@ export const SettingsForm: React.FC = () => {
             </button>
 
             {isModelOpen && (
-              <div className="absolute z-50 mt-1 w-full bg-white shadow-xl rounded-md border border-gray-200 flex flex-col max-h-80 overflow-hidden">
+              <div className="absolute z-50 mt-1 w-full bg-white shadow-xl rounded-md border border-gray-200 flex flex-col max-h-96 overflow-hidden">
                 <div className="overflow-y-auto py-1">
                   {AVAILABLE_MODELS.map((model) => (
                     <div
                       key={model.id}
-                      className="group relative px-3 py-2 cursor-pointer hover:bg-blue-50 flex items-center justify-between transition-colors"
+                      className="group relative px-3 py-2.5 cursor-pointer hover:bg-blue-50 flex items-start justify-between transition-colors border-b border-gray-50 last:border-0"
                       onClick={() => handleModelSelect(model.id)}
-                      onMouseEnter={() => setHoveredModel(model)}
-                      onMouseLeave={() => setHoveredModel(null)}
                     >
-                      <div className="flex flex-col truncate flex-1 mr-2">
-                        <div className="flex items-center gap-2">
-                          <span className={cn("text-sm font-medium truncate", model.id === effectiveModel ? "text-blue-600" : "text-gray-900")}>
+                      <div className="flex flex-col flex-1 mr-2 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className={cn("text-sm font-bold truncate", model.id === effectiveModel ? "text-blue-600" : "text-gray-900")}>
                             {model.name}
                           </span>
+                          {model.isFree && (
+                            <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold flex-shrink-0">
+                              免费
+                            </span>
+                          )}
                         </div>
-                        <div className="flex items-center justify-between text-xs mt-0.5">
-                          <span className="text-gray-500 truncate mr-2">
+                        
+                        <div className="text-[11px] text-gray-500 line-clamp-2 mb-1.5 leading-relaxed">
+                          {model.description}
+                        </div>
+
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
                             {model.provider}
                           </span>
+                          {!model.isFree && (
+                            <div className="flex gap-3 font-mono">
+                              <span className="text-gray-500">In: <span className="text-gray-700">{model.inputPrice}</span></span>
+                              <span className="text-gray-500">Out: <span className="text-gray-700">{model.outputPrice}</span></span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       {model.id === effectiveModel && (
-                        <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <Check className="w-4 h-4 text-blue-600 flex-shrink-0 mt-1" />
                       )}
                     </div>
                   ))}
-                </div>
-                
-                {/* Description Footer */}
-                <div className="p-3 bg-gray-50 border-t border-gray-100 rounded-b-md text-xs">
-                   <div className="flex items-center justify-between mb-1">
-                      <div className="font-medium text-gray-700">
-                         {(hoveredModel || currentModel).name}
-                      </div>
-                   </div>
-                   <div className="text-gray-500 leading-relaxed">
-                      {(hoveredModel || currentModel).description}
-                   </div>
                 </div>
               </div>
             )}

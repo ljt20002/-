@@ -6,6 +6,7 @@ export interface ModelInfo {
   inputPrice?: string;
   outputPrice?: string;
   supportVision?: boolean;
+  isFree?: boolean;
 }
 
 export const AVAILABLE_MODELS: ModelInfo[] = [
@@ -17,6 +18,7 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     inputPrice: '￥2.5',
     outputPrice: '￥15',
     supportVision: true,
+    isFree: false,
   },
   {
     id: 'doubao-seed-1-8-251215',
@@ -26,6 +28,7 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     inputPrice: '￥0.8',
     outputPrice: '￥8',
     supportVision: true,
+    isFree: false,
   },
   {
     id: 'qwen-flash-2025-07-28',
@@ -34,6 +37,7 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     provider: 'Alibaba',
     inputPrice: '￥0.12',
     outputPrice: '￥1.2',
+    isFree: false,
   },
   {
     id: 'DeepSeek-V3.2-Fast',
@@ -42,6 +46,7 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     provider: 'DeepSeek',
     inputPrice: '￥6.32',
     outputPrice: '￥18.96',
+    isFree: false,
   },
   {
     id: 'DeepSeek-V3.2',
@@ -50,6 +55,7 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     provider: 'DeepSeek',
     inputPrice: '￥1.58',
     outputPrice: '￥2.37',
+    isFree: false,
   },
   {
     id: 'mimo-v2-flash-free',
@@ -58,6 +64,7 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     provider: 'Mimo',
     inputPrice: '￥0',
     outputPrice: '￥0',
+    isFree: true,
   },
   {
     id: 'kat-coder-pro-v1-free',
@@ -66,6 +73,7 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     provider: 'Kat',
     inputPrice: '￥0',
     outputPrice: '￥0',
+    isFree: true,
   },
   {
     id: 'GLM-4.5-Flash',
@@ -74,6 +82,7 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     provider: 'Zhipu AI',
     inputPrice: '￥0',
     outputPrice: '￥0',
+    isFree: true,
   },
   {
     id: 'glm-4.1v-thinking-flash',
@@ -83,5 +92,6 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     inputPrice: '￥0',
     outputPrice: '￥0',
     supportVision: true,
+    isFree: true,
   }
 ];
