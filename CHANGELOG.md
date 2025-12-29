@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.0](https://github.com/ljt20002/-/compare/v1.1.0...v2.0.0) (2025-12-29)
+
+### ✨ 新功能
+
+* **聊天:** 添加消息模型显示功能并更新API基础URL ([be657df](https://github.com/ljt20002/-/commit/be657df815e755a96fc0d0314287425f21049f63))
+* **chat:** 实现多会话管理及增强功能 ([83e0761](https://github.com/ljt20002/-/commit/83e0761823677281eb505a2bd050dcdea35d8307))
+
 ## [1.1.0](https://github.com/ljt20002/-/compare/v1.0.0...v1.1.0) (2025-12-29)
 
 ### ✨ 新功能
