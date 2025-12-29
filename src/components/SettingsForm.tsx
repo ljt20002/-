@@ -93,9 +93,23 @@ export const SettingsForm: React.FC = () => {
                         </span>
                         <Info className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-400 transition-colors flex-shrink-0" />
                       </div>
-                      <span className="text-xs text-gray-500 truncate">
-                        {model.provider}
-                      </span>
+                      <div className="flex items-center justify-between text-xs mt-0.5">
+                        <span className="text-gray-500 truncate mr-2">
+                          {model.provider}
+                        </span>
+                        {(model.inputPrice || model.outputPrice) && (
+                          <span className={cn("font-mono text-[10px]", 
+                            (model.inputPrice?.includes('￥0') && model.outputPrice?.includes('￥0')) 
+                              ? "text-green-600 font-bold px-1.5 py-0.5 bg-green-50 rounded-full" 
+                              : "text-gray-400"
+                          )}>
+                            {(model.inputPrice?.includes('￥0') && model.outputPrice?.includes('￥0'))
+                              ? "FREE"
+                              : `In: ${model.inputPrice} | Out: ${model.outputPrice} / M tokens`
+                            }
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {model.id === config.model && (
                       <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
@@ -106,8 +120,22 @@ export const SettingsForm: React.FC = () => {
               
               {/* Description Footer */}
               <div className="p-3 bg-gray-50 border-t border-gray-100 rounded-b-md text-xs">
-                 <div className="font-medium text-gray-700 mb-1">
-                    {(hoveredModel || currentModel).name}
+                 <div className="flex items-center justify-between mb-1">
+                    <div className="font-medium text-gray-700">
+                       {(hoveredModel || currentModel).name}
+                    </div>
+                    {((hoveredModel || currentModel).inputPrice || (hoveredModel || currentModel).outputPrice) && (
+                       <div className={cn("font-mono text-[10px]",
+                          ((hoveredModel || currentModel).inputPrice?.includes('￥0') && (hoveredModel || currentModel).outputPrice?.includes('￥0'))
+                            ? "text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full"
+                            : "text-blue-600"
+                       )}>
+                          {((hoveredModel || currentModel).inputPrice?.includes('￥0') && (hoveredModel || currentModel).outputPrice?.includes('￥0'))
+                            ? "FREE"
+                            : `In: ${(hoveredModel || currentModel).inputPrice} / Out: ${(hoveredModel || currentModel).outputPrice} / M tokens`
+                          }
+                       </div>
+                    )}
                  </div>
                  <div className="text-gray-500 leading-relaxed">
                     {(hoveredModel || currentModel).description}

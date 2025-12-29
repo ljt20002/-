@@ -1,11 +1,11 @@
 import { create } from 'zustand';
-import { ChatMessage, MessageStatus, Role, TokenUsage } from '../types';
+import { ChatMessage, ContentPart, MessageStatus, Role, TokenUsage } from '../types';
 
 interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
-  addMessage: (role: Role, content: string) => string;
-  updateMessageContent: (id: string, content: string) => void;
+  addMessage: (role: Role, content: string | ContentPart[]) => string;
+  updateMessageContent: (id: string, content: string | ContentPart[]) => void;
   updateMessageStatus: (id: string, status: MessageStatus, error?: string) => void;
   setMessageUsage: (id: string, usage: TokenUsage) => void;
   appendContentToMessage: (id: string, content: string) => void;
@@ -17,7 +17,7 @@ export const useChatStore = create<ChatState>((set) => ({
   messages: [],
   isLoading: false,
 
-  addMessage: (role: Role, content: string) => {
+  addMessage: (role: Role, content: string | ContentPart[]) => {
     const id = crypto.randomUUID();
     const newMessage: ChatMessage = {
       id,
@@ -30,7 +30,7 @@ export const useChatStore = create<ChatState>((set) => ({
     return id;
   },
 
-  updateMessageContent: (id: string, content: string) => {
+  updateMessageContent: (id: string, content: string | ContentPart[]) => {
     set((state) => ({
       messages: state.messages.map((msg) =>
         msg.id === id ? { ...msg, content } : msg
@@ -57,7 +57,14 @@ export const useChatStore = create<ChatState>((set) => ({
   appendContentToMessage: (id: string, content: string) => {
     set((state) => ({
       messages: state.messages.map((msg) =>
-        msg.id === id ? { ...msg, content: msg.content + content } : msg
+        msg.id === id 
+          ? { 
+              ...msg, 
+              content: typeof msg.content === 'string' 
+                ? msg.content + content 
+                : msg.content 
+            } 
+          : msg
       ),
     }));
   },

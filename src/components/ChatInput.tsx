@@ -1,17 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Eraser } from 'lucide-react';
+import { Send, Loader2, Eraser, Image as ImageIcon, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface ChatInputProps {
-  onSend: (content: string) => void;
+  onSend: (content: string, images: string[]) => void;
   onClear: () => void;
   isLoading: boolean;
   disabled?: boolean;
+  supportVision?: boolean;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, isLoading, disabled }) => {
+export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, isLoading, disabled, supportVision }) => {
   const [content, setContent] = useState('');
+  const [images, setImages] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const adjustHeight = () => {
     const textarea = textareaRef.current;
@@ -26,9 +29,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, isLoading
   }, [content]);
 
   const handleSubmit = () => {
-    if (!content.trim() || isLoading || disabled) return;
-    onSend(content);
+    if ((!content.trim() && images.length === 0) || isLoading || disabled) return;
+    onSend(content, images);
     setContent('');
+    setImages([]);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.focus();
@@ -40,6 +44,34 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, isLoading
       e.preventDefault();
       handleSubmit();
     }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    // Convert to base64
+    Array.from(files).forEach(file => {
+      if (!file.type.startsWith('image/')) return;
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        if (result) {
+          setImages(prev => [...prev, result]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -55,22 +87,60 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, isLoading
         </button>
         
         <div className="relative flex-1 bg-gray-50 rounded-xl border border-gray-200 focus-within:border-blue-500 focus-within:ring-0 focus-within:shadow-sm transition-all">
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={disabled}
-            placeholder="输入您的问题..."
-            className="w-full max-h-[200px] min-h-[52px] py-3 pl-4 pr-12 bg-transparent border-none resize-none focus:ring-0 outline-none focus:outline-none text-sm disabled:opacity-50 placeholder:text-gray-400"
-            rows={1}
-          />
+          {images.length > 0 && (
+            <div className="flex gap-2 p-3 pb-0 overflow-x-auto">
+              {images.map((img, index) => (
+                <div key={index} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 group">
+                  <img src={img} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => removeImage(index)}
+                    className="absolute top-0.5 right-0.5 p-0.5 bg-black/50 text-white rounded-full hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <div className="flex items-end">
+            <div className={cn("transition-all duration-200", !supportVision && "w-0 overflow-hidden opacity-0")}>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-3 text-gray-400 hover:text-gray-600 transition-colors"
+                title="上传图片"
+                disabled={isLoading || disabled || !supportVision}
+              >
+                <ImageIcon className="w-5 h-5" />
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                accept="image/*"
+                multiple
+                className="hidden"
+              />
+            </div>
+            
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={disabled}
+              placeholder="输入您的问题..."
+              className="flex-1 max-h-[200px] min-h-[52px] py-3 pr-12 bg-transparent border-none resize-none focus:ring-0 outline-none focus:outline-none text-sm disabled:opacity-50 placeholder:text-gray-400"
+              rows={1}
+            />
+          </div>
+
           <button
             onClick={handleSubmit}
-            disabled={!content.trim() || isLoading || disabled}
+            disabled={(!content.trim() && images.length === 0) || isLoading || disabled}
             className={cn(
               "absolute right-2 bottom-2 p-2 rounded-lg transition-colors",
-              content.trim() && !isLoading && !disabled
+              (content.trim() || images.length > 0) && !isLoading && !disabled
                 ? "bg-blue-600 text-white hover:bg-blue-700"
                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
             )}

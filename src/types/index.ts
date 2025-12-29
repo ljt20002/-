@@ -13,10 +13,20 @@ export interface TokenUsage {
   total_tokens: number;
 }
 
+export type MessageType = 'text' | 'image_url';
+
+export interface ContentPart {
+  type: MessageType;
+  text?: string;
+  image_url?: {
+    url: string;
+  };
+}
+
 export interface ChatMessage {
   id: string;
   role: Role;
-  content: string;
+  content: string | ContentPart[];
   timestamp: number;
   status: MessageStatus;
   error?: string;
@@ -38,7 +48,7 @@ export interface ModelOption {
 
 export interface Message {
     role: Role;
-    content: string;
+    content: string | ContentPart[];
 }
 
 export interface ChatCompletionResponse {

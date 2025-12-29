@@ -1,25 +1,62 @@
-import React from 'react';
+import React, { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+// @ts-expect-error missing types
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+// @ts-expect-error missing types
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ChatMessage } from '../types';
 import { cn, calculateCost } from '../lib/utils';
-import { User, Bot, Loader2, AlertCircle, Zap, Coins } from 'lucide-react';
+import { User, Bot, AlertCircle, Zap, Coins } from 'lucide-react';
 import { useConfigStore } from '../store/useConfigStore';
 
 interface MessageItemProps {
   message: ChatMessage;
 }
 
-export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
+const MarkdownComponents: React.ComponentProps<typeof ReactMarkdown>['components'] = {
+  code({ inline, className, children, ...props }: React.ComponentPropsWithoutRef<'code'> & { inline?: boolean }) {
+    const match = /language-(\w+)/.exec(className || '');
+    return !inline && match ? (
+      <SyntaxHighlighter
+        {...props}
+        style={vscDarkPlus}
+        language={match[1]}
+        PreTag="div"
+      >
+        {String(children).replace(/\n$/, '')}
+      </SyntaxHighlighter>
+    ) : (
+      <code {...props} className={cn(className, "bg-black/10 rounded px-1")}>
+        {children}
+      </code>
+    );
+  }
+};
+
+const MarkdownText = ({ content }: { content: string }) => (
+  <ReactMarkdown
+    remarkPlugins={[remarkGfm]}
+    rehypePlugins={[rehypeRaw]}
+    components={MarkdownComponents}
+  >
+    {content}
+  </ReactMarkdown>
+);
+
+const MessageItemComponent: React.FC<MessageItemProps> = ({ message }) => {
   const { config } = useConfigStore();
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
 
-  if (isSystem) return null; // 可选：隐藏系统消息或以不同样式显示
+  if (isSystem) return null;
 
   const cost = !isUser && message.usage ? calculateCost(message.usage, config.model) : null;
+  
+  const hasContent = typeof message.content === 'string' 
+    ? !!message.content 
+    : message.content.length > 0;
 
   return (
     <div
@@ -39,19 +76,19 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
 
       <div
         className={cn(
-          "flex flex-col max-w-[85%] lg:max-w-[75%]",
+          "flex flex-col max-w-[95%] lg:max-w-[75%] min-w-0",
           isUser ? "items-end" : "items-start"
         )}
       >
         <div
           className={cn(
-            "rounded-2xl px-4 py-3 shadow-sm",
+            "rounded-2xl px-4 py-3 shadow-sm overflow-x-auto max-w-full",
             isUser
               ? "bg-blue-600 text-white rounded-tr-none"
               : "bg-white border border-gray-100 rounded-tl-none text-gray-800"
           )}
         >
-          {message.status === 'receiving' && !message.content ? (
+          {(message.status === 'receiving' || message.status === 'pending') && !hasContent ? (
             <div className="flex items-center gap-1 h-6 px-2">
               <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
               <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
@@ -59,30 +96,26 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
             </div>
           ) : (
             <div className={cn("prose prose-sm max-w-none break-words", isUser && "prose-invert")}>
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  code({ inline, className, children, ...props }: React.ComponentPropsWithoutRef<'code'> & { inline?: boolean }) {
-                    const match = /language-(\w+)/.exec(className || '');
-                    return !inline && match ? (
-                      <SyntaxHighlighter
-                        {...props}
-                        style={vscDarkPlus}
-                        language={match[1]}
-                        PreTag="div"
-                      >
-                        {String(children).replace(/\n$/, '')}
-                      </SyntaxHighlighter>
-                    ) : (
-                      <code {...props} className={cn(className, "bg-black/10 rounded px-1")}>
-                        {children}
-                      </code>
+              {typeof message.content === 'string' ? (
+                <MarkdownText content={message.content} />
+              ) : (
+                message.content.map((part, index) => {
+                  if (part.type === 'text') {
+                    return <MarkdownText key={index} content={part.text || ''} />;
+                  }
+                  if (part.type === 'image_url') {
+                    return (
+                      <img 
+                        key={index}
+                        src={part.image_url?.url}
+                        alt="Uploaded content"
+                        className="max-w-full rounded-lg my-2"
+                      />
                     );
                   }
-                }}
-              >
-                {message.content}
-              </ReactMarkdown>
+                  return null;
+                })
+              )}
             </div>
           )}
         </div>
@@ -124,3 +157,11 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
     </div>
   );
 };
+
+export const MessageItem = memo(MessageItemComponent, (prev, next) => {
+  return (
+    prev.message.content === next.message.content &&
+    prev.message.status === next.message.status &&
+    prev.message.usage?.total_tokens === next.message.usage?.total_tokens
+  );
+});

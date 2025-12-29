@@ -32,6 +32,17 @@ pnpm dev
 pnpm build
 ```
 
+### 自动化部署 (GitHub Pages)
+项目已配置 GitHub Actions。当代码推送到 `main` 分支时，会自动触发构建并部署到 GitHub Pages。
+
+**部署步骤：**
+1. 进入 GitHub 仓库设置 (Settings) -> Pages。
+2. 在 **Build and deployment** -> **Source** 中选择 `GitHub Actions`。
+3. 之后每次推送 `main` 分支代码，GitHub 都会自动完成构建与发布。
+
+**注意：**
+- 如果您的仓库不是根域名（如 `username.github.io/repo/`），请在 `vite.config.ts` 中设置 `base: '/repo/'`。
+
 ## 🛠 开发规范与版本控制
 
 本项目采用了高度自动化的版本管理和日志记录流程。
@@ -64,6 +75,14 @@ src/
 ├── types/        # TypeScript 类型定义
 └── pages/        # 路由页面
 ```
+
+## 🏗 技术架构与性能优化
+
+- **纯前端架构**: 无后端服务，所有数据存储在本地浏览器（LocalStorage），确保隐私安全。
+- **状态管理**: 使用 **Zustand** 进行轻量级全局状态管理。
+- **渲染性能**:
+  - **组件级缓存**: 核心组件 `MessageItem` 采用 `React.memo` 深度优化，通过自定义对比函数（Custom Comparator）精准控制重绘。
+  - **流式输出优化**: 在 AI 流式回复过程中，仅当前正在生成的消息组件会更新，历史消息保持静态，彻底解决了打字机效果导致的长列表卡顿问题。
 
 ## 📄 开源协议
 [MIT License](LICENSE)

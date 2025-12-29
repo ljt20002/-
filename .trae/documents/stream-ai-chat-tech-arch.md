@@ -21,9 +21,9 @@ graph TD
 ## 2. 技术描述
 
 - **前端**：React@18 + TypeScript + Tailwind CSS
-- **初始化工具**：vite-init
+- **构建工具**：Vite (配置为 Solution-Style TSConfig)
 - **状态管理**：Zustand
-- **流式通信**：原生EventSource API
+- **流式通信**：原生 Fetch + ReadableStream (非 EventSource，支持 POST)
 - **Markdown渲染**：react-markdown + remark-gfm
 - **代码高亮**：react-syntax-highlighter
 - **后端**：无（纯客户端应用）
@@ -109,7 +109,6 @@ enum MessageStatus {
   PENDING = 'pending',
   SENT = 'sent',
   RECEIVING = 'receiving',
-  COMPLETED = 'completed',
   ERROR = 'error'
 }
 
@@ -123,9 +122,9 @@ interface ChatMessage extends Message {
 ## 7. 关键技术实现
 
 ### 7.1 SSE连接管理
-- 使用原生EventSource API建立连接
-- 实现自动重连机制
-- 错误处理和连接状态监控
+- 使用 `fetch` API 发起 POST 请求
+- 处理 `ReadableStream` 获取流式响应
+- 手动解析 SSE 格式数据 (buffer处理)
 
 ### 7.2 流式数据处理
 - 逐块解析SSE数据流
@@ -133,6 +132,6 @@ interface ChatMessage extends Message {
 - 消息缓冲和拼接处理
 
 ### 7.3 性能优化
-- 消息列表虚拟滚动（大量消息时）
-- 防抖处理用户输入
-- 组件懒加载和代码分割
+- **渲染优化**: 使用 `React.memo` + 自定义对比函数，避免历史消息重绘
+- **虚拟滚动**: (规划中) 针对超长对话列表的优化
+- **防抖处理**: 用户输入防抖
