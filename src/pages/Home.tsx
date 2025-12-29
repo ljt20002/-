@@ -8,30 +8,44 @@ import { Empty } from '../components/Empty';
 import { SettingsDrawer } from '../components/SettingsDrawer';
 import { streamChatCompletion } from '../lib/stream';
 import { AVAILABLE_MODELS } from '../lib/constants';
-import { Settings as SettingsIcon } from 'lucide-react';
+import { Settings as SettingsIcon, Menu } from 'lucide-react';
 import { MessageStatus, ContentPart } from '../types';
 
-export default function Home() {
+interface HomeProps {
+  onToggleSidebar: () => void;
+}
+
+export default function Home({ onToggleSidebar }: HomeProps) {
+  const { config } = useConfigStore();
   const { 
-    messages, 
+    sessions,
+    currentSessionId,
     addMessage, 
     updateMessageStatus, 
     appendContentToMessage,
     setMessageUsage,
-    isLoading, 
     setLoading,
+    abortResponse,
+    getSignal,
     clearMessages
   } = useChatStore();
   
-  const { config } = useConfigStore();
+  const currentSession = useMemo(() => 
+    sessions.find(s => s.id === currentSessionId),
+    [sessions, currentSessionId]
+  );
+
+  const messages = useMemo(() => currentSession?.messages || [], [currentSession]);
+  const isLoading = currentSession?.isLoading || false;
+  const sessionModel = currentSession?.model || config.model;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const shouldAutoScroll = useRef(true);
 
   const currentModel = useMemo(() => 
-    AVAILABLE_MODELS.find(m => m.id === config.model),
-    [config.model]
+    AVAILABLE_MODELS.find(m => m.id === sessionModel),
+    [sessionModel]
   );
 
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
@@ -43,8 +57,6 @@ export default function Home() {
   const handleScroll = () => {
     if (!scrollContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-    // 只有当距离底部小于 50px 时才认为是“在底部”
-    // 注意：这里需要容错，因为 scrollIntoView 并不总是能精确对齐
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
     shouldAutoScroll.current = isAtBottom;
   };
@@ -62,9 +74,7 @@ export default function Home() {
       return;
     }
 
-    // 发送消息时强制滚动到底部
     shouldAutoScroll.current = true;
-    // 立即滚动，确保用户看到自己的消息
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 0);
 
     let finalContent: string | ContentPart[] = content;
@@ -79,17 +89,28 @@ export default function Home() {
       ];
     }
 
+    // Capture valid history messages (exclude errors/interrupted)
+    const validHistory = messages.filter(m => m.status === MessageStatus.SENT);
+    const systemPrompt = currentSession?.systemPrompt || config.systemPrompt || 'You are a helpful AI assistant.';
+
     // Add user message
     addMessage('user', finalContent);
 
     // Add initial bot message
-    const botMessageId = addMessage('assistant', '', config.model);
-    setLoading(true);
+    const botMessageId = addMessage('assistant', '', sessionModel);
+    const sessionId = currentSessionId;
+    setLoading(true, sessionId!);
 
     try {
+      const signal = getSignal(sessionId!);
       await streamChatCompletion({
-        config,
-        messages: [...messages, { role: 'user', content: finalContent }], // Include the new message
+        config: { ...config, model: sessionModel },
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...validHistory, 
+          { role: 'user', content: finalContent }
+        ], 
+        signal,
         onChunk: (chunk) => {
           appendContentToMessage(botMessageId, chunk);
         },
@@ -98,36 +119,50 @@ export default function Home() {
         },
         onFinish: () => {
           updateMessageStatus(botMessageId, MessageStatus.SENT);
-          setLoading(false);
+          setLoading(false, sessionId!);
         },
         onError: (error) => {
-          updateMessageStatus(botMessageId, MessageStatus.ERROR, error.message);
-          setLoading(false);
+          if (error.name === 'AbortError') {
+            updateMessageStatus(botMessageId, MessageStatus.SENT);
+          } else {
+            updateMessageStatus(botMessageId, MessageStatus.ERROR, error.message);
+          }
+          setLoading(false, sessionId!);
         },
       });
     } catch (error) {
       console.error('Failed to send message:', error);
       updateMessageStatus(botMessageId, MessageStatus.ERROR, '发送请求失败');
-      setLoading(false);
+      setLoading(false, sessionId!);
     }
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50">
+    <div className="flex flex-col h-full bg-gray-50">
        {/* Header with Settings Button */}
        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
-        <h1 className="font-semibold text-gray-800">AI Chat</h1>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={onToggleSidebar}
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg lg:hidden"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <h1 className="font-semibold text-gray-800 truncate max-w-[150px] md:max-w-none">
+            {currentSession?.title || 'AI Chat'}
+          </h1>
+        </div>
         
-        {/* Top Billing Bar moved to Header */}
-        <BillingBar />
-
-        <button 
-          onClick={() => setIsSettingsOpen(true)}
-          className="p-2 text-gray-600 hover:bg-gray-100 rounded-full" 
-          title="设置"
-        >
-          <SettingsIcon className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <BillingBar />
+          <button 
+            onClick={() => setIsSettingsOpen(true)}
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded-full" 
+            title="设置"
+          >
+            <SettingsIcon className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Message List */}
@@ -149,7 +184,12 @@ export default function Home() {
       {/* Input Area */}
       <ChatInput 
         onSend={handleSend} 
-        onClear={clearMessages}
+        onClear={() => {
+          if (confirm('确定要清空当前会话的所有消息吗？')) {
+            clearMessages();
+          }
+        }}
+        onAbort={() => abortResponse(currentSessionId || undefined)}
         isLoading={isLoading}
         disabled={!config.apiKey}
         supportVision={currentModel?.supportVision}

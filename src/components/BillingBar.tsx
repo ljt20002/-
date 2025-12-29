@@ -5,16 +5,19 @@ import { calculateCost } from '../lib/utils';
 import { Calendar, TrendingUp } from 'lucide-react';
 
 export const BillingBar: React.FC = () => {
-  const { messages } = useChatStore();
+  const { sessions } = useChatStore();
   const { config } = useConfigStore();
+
+  const allMessages = useMemo(() => {
+    return sessions.flatMap(s => s.messages);
+  }, [sessions]);
 
   const totalCost = useMemo(() => {
     let total = 0;
-    messages.forEach((msg) => {
+    allMessages.forEach((msg) => {
       if (msg.role === 'assistant' && msg.usage) {
-        // Use the current model for calculation as a fallback, 
-        // ideally each message should store its model but we use config.model for now as per previous implementation
-        const costStr = calculateCost(msg.usage, config.model);
+        // Use message.model if available, fallback to config.model
+        const costStr = calculateCost(msg.usage, msg.model || config.model);
         if (costStr) {
           const cost = parseFloat(costStr.replace('￥', ''));
           total += cost;
@@ -22,18 +25,19 @@ export const BillingBar: React.FC = () => {
       }
     });
     return total;
-  }, [messages, config.model]);
+  }, [allMessages, config.model]);
 
-  // Mock date range for now, or use actual date range of messages
   const dateRange = useMemo(() => {
-    if (messages.length === 0) {
+    if (allMessages.length === 0) {
       const today = new Date().toISOString().split('T')[0];
       return `${today} ~ ${today}`;
     }
-    const start = new Date(messages[0].timestamp).toISOString().split('T')[0];
-    const end = new Date(messages[messages.length - 1].timestamp).toISOString().split('T')[0];
+    // Sort all messages by timestamp to find true range
+    const sorted = [...allMessages].sort((a, b) => a.timestamp - b.timestamp);
+    const start = new Date(sorted[0].timestamp).toISOString().split('T')[0];
+    const end = new Date(sorted[sorted.length - 1].timestamp).toISOString().split('T')[0];
     return `${start} ~ ${end}`;
-  }, [messages]);
+  }, [allMessages]);
 
   return (
     <div className="flex items-center gap-3 px-3 py-1 bg-blue-50/50 border border-blue-100 rounded-lg">

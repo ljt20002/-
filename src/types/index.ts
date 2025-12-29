@@ -34,6 +34,17 @@ export interface ChatMessage {
   model?: string;
 }
 
+export interface ChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: number;
+  updatedAt: number;
+  model: string;
+  systemPrompt?: string;
+  isLoading?: boolean;
+}
+
 export interface AppConfig {
   apiKey: string;
   model: string;

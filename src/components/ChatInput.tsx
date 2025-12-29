@@ -1,16 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Eraser, Image as ImageIcon, X } from 'lucide-react';
+import { Send, Eraser, Image as ImageIcon, X, Square } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface ChatInputProps {
   onSend: (content: string, images: string[]) => void;
   onClear: () => void;
+  onAbort?: () => void;
   isLoading: boolean;
   disabled?: boolean;
   supportVision?: boolean;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, isLoading, disabled, supportVision }) => {
+export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, onAbort, isLoading, disabled, supportVision }) => {
   const [content, setContent] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -135,22 +136,28 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, isLoading
             />
           </div>
 
-          <button
-            onClick={handleSubmit}
-            disabled={(!content.trim() && images.length === 0) || isLoading || disabled}
-            className={cn(
-              "absolute right-2 bottom-2 p-2 rounded-lg transition-colors",
-              (content.trim() || images.length > 0) && !isLoading && !disabled
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-            )}
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
+          {isLoading ? (
+            <button
+              onClick={onAbort}
+              className="absolute right-2 bottom-2 p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors shadow-sm"
+              title="停止生成"
+            >
+              <Square className="w-4 h-4 fill-current" />
+            </button>
+          ) : (
+            <button
+              onClick={handleSubmit}
+              disabled={(!content.trim() && images.length === 0) || disabled}
+              className={cn(
+                "absolute right-2 bottom-2 p-2 rounded-lg transition-colors",
+                (content.trim() || images.length > 0) && !disabled
+                  ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              )}
+            >
               <Send className="w-4 h-4" />
-            )}
-          </button>
+            </button>
+          )}
         </div>
       </div>
       <div className="text-center mt-2 text-xs text-gray-400">

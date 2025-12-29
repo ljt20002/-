@@ -7,6 +7,7 @@ interface StreamOptions {
   onUsage?: (usage: TokenUsage) => void;
   onFinish: () => void;
   onError: (error: Error) => void;
+  signal?: AbortSignal;
 }
 
 export async function streamChatCompletion({
@@ -16,6 +17,7 @@ export async function streamChatCompletion({
   onUsage,
   onFinish,
   onError,
+  signal,
 }: StreamOptions) {
   try {
     const { apiKey, model, baseUrl } = config;
@@ -33,6 +35,7 @@ export async function streamChatCompletion({
         stream_options: { include_usage: true },
         messages: messages.map(({ role, content }) => ({ role, content })),
       }),
+      signal,
     });
 
     if (!response.ok) {

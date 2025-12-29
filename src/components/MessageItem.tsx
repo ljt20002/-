@@ -8,8 +8,9 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ChatMessage } from '../types';
 import { cn, calculateCost } from '../lib/utils';
-import { User, Bot, AlertCircle, Zap, Coins, Cpu } from 'lucide-react';
+import { User, Bot, AlertCircle, Zap, Coins, Cpu, Trash2 } from 'lucide-react';
 import { useConfigStore } from '../store/useConfigStore';
+import { useChatStore } from '../store/useChatStore';
 import { AVAILABLE_MODELS } from '../lib/constants';
 
 interface MessageItemProps {
@@ -48,6 +49,7 @@ const MarkdownText = ({ content }: { content: string }) => (
 
 const MessageItemComponent: React.FC<MessageItemProps> = ({ message }) => {
   const { config } = useConfigStore();
+  const { deleteMessage } = useChatStore();
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
 
@@ -164,9 +166,22 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({ message }) => {
           </div>
         )}
         
-        <span className="text-xs text-gray-400 mt-1">
-            {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </span>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-xs text-gray-400">
+              {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+          <button
+            onClick={() => {
+              if (confirm('确定要删除这条消息吗？')) {
+                deleteMessage(message.id);
+              }
+            }}
+            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+            title="删除消息"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
       </div>
     </div>
   );
