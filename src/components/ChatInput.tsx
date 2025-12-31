@@ -42,13 +42,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, onAbort, 
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -146,7 +139,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, onAbort, 
               ref={textareaRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              onKeyDown={handleKeyDown}
               disabled={disabled}
               placeholder="输入您的问题..."
               className={cn(
@@ -182,7 +174,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, onAbort, 
         </div>
       </div>
       <div className="text-center mt-3 text-xs text-gray-400">
-        按 Enter 发送，Shift + Enter 换行
+        输入您的问题，点击发送按钮提交
       </div>
     </div>
   );
