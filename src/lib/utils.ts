@@ -30,3 +30,34 @@ export function calculateCost(usage: TokenUsage, modelId: string): string | null
     return null;
   }
 }
+
+/**
+ * 播放一个轻微的提示音
+ * 使用 Web Audio API 合成，无需外部音频文件
+ */
+export function playNotificationSound() {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    // 渐清的频率：从 880Hz (A5) 到 1320Hz (E6)
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.1);
+
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+  } catch (e) {
+    console.error('Failed to play notification sound:', e);
+  }
+}

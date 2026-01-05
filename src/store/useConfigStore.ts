@@ -14,6 +14,7 @@ const defaultConfig: AppConfig = {
   baseUrl: 'https://www.dmxapi.cn/v1/',
   searchEnabled: true,
   searchApiKey: '5ce2ce1aa9cfc6886340c1c9cbba0bb8317690da',
+  optimizerModelId: 'gemini-3-flash-preview',
   systemPrompt: `### Role
 你是一个智能、专业且乐于助人的 AI 助手。你的目标是根据用户的指令提供准确、清晰且有价值的回复。
 

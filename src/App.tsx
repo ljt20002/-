@@ -1,6 +1,7 @@
 import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import { useState } from "react";
 import Home from "@/pages/Home";
+import Compare from "@/pages/Compare";
 import { Sidebar } from "@/components/Sidebar";
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
         <div className="flex-1 flex flex-col min-w-0 bg-gray-50">
           <Routes>
             <Route path="/" element={<Home onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />} />
+            <Route path="/compare" element={<Compare onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />} />
             <Route path="/other" element={<div className="text-center text-xl">Other Page - Coming Soon</div>} />
           </Routes>
         </div>

@@ -22,6 +22,7 @@ interface ChatState {
   updateMessageContent: (id: string, content: string | ContentPart[]) => void;
   updateMessageStatus: (id: string, status: MessageStatus, error?: string) => void;
   setMessageUsage: (id: string, usage: TokenUsage) => void;
+  setMessageLatency: (id: string, latency: number) => void;
   appendContentToMessage: (id: string, content: string) => void;
   deleteMessage: (id: string) => void;
   clearMessages: () => void;
@@ -187,6 +188,17 @@ export const useChatStore = create<ChatState>()(
             ...s,
             messages: s.messages.map((m) =>
               m.id === id ? { ...m, usage } : m
+            ),
+          })),
+        }));
+      },
+
+      setMessageLatency: (id, latency) => {
+        set((state) => ({
+          sessions: state.sessions.map((s) => ({
+            ...s,
+            messages: s.messages.map((m) =>
+              m.id === id ? { ...m, latency } : m
             ),
           })),
         }));

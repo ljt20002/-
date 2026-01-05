@@ -95,3 +95,20 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     isFree: true,
   }
 ];
+
+export const JUDGE_PERSPECTIVES = [
+  '综合能力',
+  '代码编写',
+  '逻辑推理',
+  '翻译能力',
+  '创意写作',
+  '文本摘要',
+  '数学解题',
+  '中文语境',
+  '知识问答',
+  '指令遵循',
+  '角色扮演',
+  '学术润色',
+  '情感分析',
+  '信息提取'
+];

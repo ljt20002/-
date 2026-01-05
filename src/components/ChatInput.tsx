@@ -1,7 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Eraser, Image as ImageIcon, X, Square, Globe } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { 
+  SendOutlined, 
+  ClearOutlined, 
+  PictureOutlined, 
+  CloseCircleFilled, 
+  StopOutlined, 
+  GlobalOutlined, 
+  ThunderboltOutlined, 
+  LoadingOutlined 
+} from '@ant-design/icons';
+import { Button, Input, Tooltip, Space, Badge, message } from 'antd';
+import { cn, playNotificationSound } from '../lib/utils';
 import { useConfigStore } from '../store/useConfigStore';
+import { streamChatCompletion } from '../lib/stream';
+
+const { TextArea } = Input;
 
 interface ChatInputProps {
   onSend: (content: string, images: string[]) => void;
@@ -10,43 +23,89 @@ interface ChatInputProps {
   isLoading: boolean;
   disabled?: boolean;
   supportVision?: boolean;
+  value?: string;
+  onChange?: (value: string) => void;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, onAbort, isLoading, disabled, supportVision }) => {
+export const ChatInput: React.FC<ChatInputProps> = ({ 
+  onSend, 
+  onClear, 
+  onAbort, 
+  isLoading, 
+  disabled, 
+  supportVision,
+  value,
+  onChange
+}) => {
   const { config, setConfig } = useConfigStore();
-  const [content, setContent] = useState('');
+  const [internalContent, setInternalContent] = useState('');
   const [images, setImages] = useState<string[]>([]);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isOptimizing, setIsOptimizing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const adjustHeight = () => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+  const content = value !== undefined ? value : internalContent;
+  const setContent = (val: string) => {
+    if (onChange) {
+      onChange(val);
+    } else {
+      setInternalContent(val);
     }
   };
 
-  useEffect(() => {
-    adjustHeight();
-  }, [content]);
+  const handleOptimize = async () => {
+    if (!content.trim() || isOptimizing || isLoading) return;
+    
+    const optimizerModelId = config.optimizerModelId || config.model;
+    if (!config.apiKey) {
+      message.warning('请先在设置中配置 API Key');
+      return;
+    }
+
+    setIsOptimizing(true);
+    let optimizedContent = '';
+    
+    try {
+      await streamChatCompletion({
+        config: { ...config, model: optimizerModelId },
+        messages: [
+          { 
+            role: 'system', 
+            content: '你是一个提示词工程专家。请优化用户输入的提示词，使其更加清晰、专业、详细且易于 AI 理解。直接输出优化后的提示词内容，不要包含任何解释或开场白。' 
+          },
+          { role: 'user', content }
+        ],
+        onChunk: (chunk) => {
+          optimizedContent += chunk;
+          setContent(optimizedContent);
+        },
+        onFinish: () => {
+          setIsOptimizing(false);
+          message.success('提示词优化完成');
+          playNotificationSound();
+        },
+        onError: (error) => {
+          console.error('Prompt optimization failed:', error);
+          message.error('提示词优化失败: ' + error.message);
+          setIsOptimizing(false);
+        }
+      });
+    } catch (error) {
+      console.error('Prompt optimization error:', error);
+      setIsOptimizing(false);
+    }
+  };
 
   const handleSubmit = () => {
     if ((!content.trim() && images.length === 0) || isLoading || disabled) return;
     onSend(content, images);
     setContent('');
     setImages([]);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.focus();
-    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    // Convert to base64
     Array.from(files).forEach(file => {
       if (!file.type.startsWith('image/')) return;
       
@@ -60,7 +119,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, onAbort, 
       reader.readAsDataURL(file);
     });
 
-    // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -72,109 +130,128 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onClear, onAbort, 
 
   return (
     <div className="border-t border-gray-200 bg-white p-4">
-      <div className="max-w-4xl mx-auto flex items-end gap-4">
-        <button
+      <div className="max-w-4xl mx-auto flex items-end gap-3">
+        <Tooltip title="清空对话">
+          <Button
+            shape="circle"
+            icon={<ClearOutlined />}
             onClick={onClear}
-            className="p-3 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors"
-            title="清空对话"
             disabled={isLoading || disabled}
-        >
-            <Eraser className="w-5 h-5" />
-        </button>
+            className="flex-shrink-0 mb-1"
+          />
+        </Tooltip>
         
-        <div className="relative flex-1 bg-gray-50 rounded-xl border border-gray-200 focus-within:border-blue-500 focus-within:ring-0 focus-within:shadow-sm transition-all">
+        <div className="relative flex-1 bg-gray-50 rounded-xl border border-gray-200 focus-within:border-blue-500 transition-all flex flex-col">
           {images.length > 0 && (
             <div className="flex gap-2 p-3 pb-0 overflow-x-auto">
               {images.map((img, index) => (
-                <div key={index} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 group">
+                <div key={index} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 group flex-shrink-0">
                   <img src={img} alt={`Preview ${index}`} className="w-full h-full object-cover" />
                   <button
                     onClick={() => removeImage(index)}
-                    className="absolute top-0.5 right-0.5 p-0.5 bg-black/50 text-white rounded-full hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-0.5 right-0.5 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
-                    <X className="w-3 h-3" />
+                    <CloseCircleFilled className="text-base" />
                   </button>
                 </div>
               ))}
             </div>
           )}
           
-          <div className="flex items-center min-h-[52px]">
-            <div className="flex items-center h-full">
-              <div className={cn("transition-all duration-200", !supportVision && "w-0 overflow-hidden opacity-0")}>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-3 text-gray-400 hover:text-gray-600 transition-colors"
-                  title="上传图片"
-                  disabled={isLoading || disabled || !supportVision}
-                >
-                  <ImageIcon className="w-5 h-5" />
-                </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileSelect}
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                />
-              </div>
+          <div className="flex items-center">
+            <div className="flex items-center pl-1">
+              {supportVision && (
+                <>
+                  <Tooltip title="上传图片">
+                    <Button
+                      type="text"
+                      icon={<PictureOutlined />}
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isLoading || disabled}
+                      className="text-gray-400 hover:text-gray-600"
+                    />
+                  </Tooltip>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                  />
+                </>
+              )}
 
-              <button
-                onClick={() => setConfig({ searchEnabled: !config.searchEnabled })}
-                className={cn(
-                  "p-3 transition-all duration-200 rounded-lg",
-                  config.searchEnabled 
-                    ? "text-blue-600 bg-blue-50" 
-                    : "text-gray-400 hover:text-gray-600"
-                )}
-                title={config.searchEnabled ? "关闭联网搜索" : "开启联网搜索"}
-                disabled={isLoading || disabled}
-              >
-                <Globe className={cn("w-5 h-5", config.searchEnabled && "animate-pulse")} />
-              </button>
+              <Tooltip title={config.searchEnabled ? "关闭联网搜索" : "开启联网搜索"}>
+                <Button
+                  type="text"
+                  icon={<GlobalOutlined className={cn(config.searchEnabled && "text-blue-600")} />}
+                  onClick={() => setConfig({ searchEnabled: !config.searchEnabled })}
+                  disabled={isLoading || disabled}
+                  className={cn(config.searchEnabled ? "bg-blue-50" : "text-gray-400")}
+                />
+              </Tooltip>
+
+              <Tooltip title="优化提示词">
+                <Button
+                  type="text"
+                  icon={isOptimizing ? <LoadingOutlined /> : <ThunderboltOutlined className={cn(isOptimizing && "text-purple-600")} />}
+                  onClick={handleOptimize}
+                  disabled={isLoading || disabled || isOptimizing || !content.trim()}
+                  className={cn(isOptimizing ? "bg-purple-50" : "text-gray-400")}
+                />
+              </Tooltip>
             </div>
             
-            <textarea
-              ref={textareaRef}
+            <TextArea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               disabled={disabled}
               placeholder="输入您的问题..."
-              className={cn(
-                "flex-1 max-h-[200px] min-h-[52px] py-3 pr-12 bg-transparent border-none resize-none focus:ring-0 outline-none focus:outline-none text-sm disabled:opacity-50 placeholder:text-gray-400",
-                !supportVision && "pl-4"
-              )}
-              rows={1}
+              autoSize={{ minRows: 1, maxRows: 8 }}
+              onPressEnter={(e) => {
+                if (e.shiftKey) return;
+                // Note: The previous logic was disabled as per recent commits
+                // e.preventDefault();
+                // handleSubmit();
+              }}
+              className="flex-1 py-3 px-2 bg-transparent border-none focus:ring-0 shadow-none hover:bg-transparent text-sm disabled:opacity-50"
             />
-          </div>
 
-          {isLoading ? (
-            <button
-              onClick={onAbort}
-              className="absolute right-2 bottom-2 p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors shadow-sm"
-              title="停止生成"
-            >
-              <Square className="w-4 h-4 fill-current" />
-            </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={(!content.trim() && images.length === 0) || disabled}
-              className={cn(
-                "absolute right-2 bottom-2 p-2 rounded-lg transition-colors",
-                (content.trim() || images.length > 0) && !disabled
-                  ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+            <div className="pr-2 pb-2 self-end">
+              {isLoading ? (
+                <Tooltip title="停止生成">
+                  <Button
+                    type="primary"
+                    danger
+                    shape="circle"
+                    icon={<StopOutlined />}
+                    onClick={onAbort}
+                    size="small"
+                  />
+                </Tooltip>
+              ) : (
+                <Button
+                  type="primary"
+                  shape="circle"
+                  icon={<SendOutlined />}
+                  onClick={handleSubmit}
+                  disabled={(!content.trim() && images.length === 0) || disabled}
+                  size="small"
+                  className={cn(
+                    (!content.trim() && images.length === 0) || disabled
+                      ? "bg-gray-200 text-gray-400 border-none"
+                      : "bg-blue-600"
+                  )}
+                />
               )}
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          )}
+            </div>
+          </div>
         </div>
       </div>
-      <div className="text-center mt-3 text-xs text-gray-400">
-        输入您的问题，点击发送按钮提交
+      <div className="text-center mt-3 text-[10px] text-gray-400 flex items-center justify-center gap-1">
+        <span>输入您的问题，点击发送按钮提交</span>
+        {config.searchEnabled && <Badge status="processing" text="联网搜索已开启" className="scale-75 origin-left" />}
       </div>
     </div>
   );

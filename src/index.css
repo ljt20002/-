@@ -13,6 +13,27 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+@layer base {
+  /* 自定义全局滚动条样式 */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #d1d5db;
+  }
+}
+
 @layer utilities {
   .prose table {
     display: block;
@@ -23,7 +44,7 @@
   
   /* 隐藏滚动条但保留滚动功能 */
   .no-scrollbar::-webkit-scrollbar {
-    display: none;
+    display: none !important;
   }
   .no-scrollbar {
     -ms-overflow-style: none;

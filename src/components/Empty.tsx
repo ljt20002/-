@@ -1,14 +1,21 @@
 import React from 'react';
-import { Bot } from 'lucide-react';
+import { Empty as AntEmpty, Typography } from 'antd';
+import { RobotOutlined } from '@ant-design/icons';
+
+const { Title, Text } = Typography;
 
 export const Empty: React.FC = () => {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-gray-400 mt-20">
-      <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
-        <Bot className="w-8 h-8 text-blue-500" />
-      </div>
-      <h3 className="text-lg font-medium text-gray-900">开始新的对话</h3>
-      <p className="text-sm mt-2">配置 API Key 后即可开始聊天</p>
+    <div className="flex flex-col items-center justify-center h-full mt-20">
+      <AntEmpty
+        image={<RobotOutlined style={{ fontSize: 64, color: '#1890ff' }} />}
+        description={
+          <div className="flex flex-col items-center gap-2">
+            <Title level={4} style={{ margin: 0 }}>开始新的对话</Title>
+            <Text type="secondary">配置 API Key 后即可开始聊天</Text>
+          </div>
+        }
+      />
     </div>
   );
 };

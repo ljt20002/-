@@ -8,10 +8,22 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ChatMessage } from '../types';
 import { cn, calculateCost } from '../lib/utils';
-import { User, Bot, AlertCircle, Zap, Coins, Cpu, Trash2 } from 'lucide-react';
+import { 
+  UserOutlined, 
+  RobotOutlined, 
+  WarningOutlined, 
+  ThunderboltOutlined, 
+  DollarOutlined, 
+  DesktopOutlined, 
+  DeleteOutlined, 
+  ClockCircleOutlined 
+} from '@ant-design/icons';
+import { Avatar, Popconfirm, Button, Tooltip, Typography, Space } from 'antd';
 import { useConfigStore } from '../store/useConfigStore';
 import { useChatStore } from '../store/useChatStore';
 import { AVAILABLE_MODELS } from '../lib/constants';
+
+const { Text } = Typography;
 
 interface MessageItemProps {
   message: ChatMessage;
@@ -37,7 +49,7 @@ const MarkdownComponents: React.ComponentProps<typeof ReactMarkdown>['components
   }
 };
 
-const MarkdownText = ({ content }: { content: string }) => (
+export const MarkdownText = ({ content }: { content: string }) => (
   <ReactMarkdown
     remarkPlugins={[remarkGfm]}
     rehypePlugins={[rehypeRaw]}
@@ -72,14 +84,13 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({ message }) => {
         isUser ? "flex-row-reverse" : "flex-row"
       )}
     >
-      <div
-        className={cn(
-          "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
-          isUser ? "bg-blue-600 text-white" : "bg-green-600 text-white"
-        )}
-      >
-        {isUser ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
-      </div>
+      <Avatar 
+        icon={isUser ? <UserOutlined /> : <RobotOutlined />} 
+        style={{ 
+          backgroundColor: isUser ? '#1890ff' : '#52c41a',
+          flexShrink: 0 
+        }}
+      />
 
       <div
         className={cn(
@@ -130,28 +141,45 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({ message }) => {
         {/* 消耗统计 */}
         {!isUser && (
           <div className="mt-1 flex items-center gap-2 text-[10px] text-gray-400 select-none flex-wrap">
-            <div className="flex items-center gap-0.5" title="模型">
-              <Cpu className="w-3 h-3" />
-              <span>{modelName}</span>
-            </div>
+            <Tooltip title="使用模型">
+              <Space size={2}>
+                <DesktopOutlined />
+                <span>{modelName}</span>
+              </Space>
+            </Tooltip>
             {message.usage && (
               <>
                 <span>•</span>
-                <div className="flex items-center gap-0.5" title="总 Tokens">
-                  <Zap className="w-3 h-3" />
-                  <span>{message.usage.total_tokens} tokens</span>
-                </div>
+                <Tooltip title="Token 消耗总量">
+                  <Space size={2}>
+                    <ThunderboltOutlined />
+                    <span>{message.usage.total_tokens}</span>
+                  </Space>
+                </Tooltip>
                 <span>•</span>
-                <span title="输入 Tokens">In: {message.usage.prompt_tokens}</span>
-                <span>•</span>
-                <span title="输出 Tokens">Out: {message.usage.completion_tokens}</span>
+                <Tooltip title="输入/输出 Token 分布">
+                  <span>{message.usage.prompt_tokens} / {message.usage.completion_tokens}</span>
+                </Tooltip>
+                {message.latency && (
+                  <>
+                    <span>•</span>
+                    <Tooltip title="响应时间">
+                      <Space size={2}>
+                        <ClockCircleOutlined />
+                        <span>{(message.latency / 1000).toFixed(2)}s</span>
+                      </Space>
+                    </Tooltip>
+                  </>
+                )}
                 {cost && (
                   <>
                     <span>•</span>
-                    <div className="flex items-center gap-0.5 text-yellow-600/80" title="估算消耗">
-                      <Coins className="w-3 h-3" />
-                      <span>{cost}</span>
-                    </div>
+                    <Tooltip title="估算费用">
+                      <Space size={2} className="text-yellow-600/80">
+                        <DollarOutlined />
+                        <span>{cost}</span>
+                      </Space>
+                    </Tooltip>
                   </>
                 )}
               </>
@@ -161,26 +189,30 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({ message }) => {
 
         {message.status === 'error' && (
           <div className="mt-1 flex items-center gap-1 text-xs text-red-500">
-            <AlertCircle className="w-3 h-3" />
+            <WarningOutlined />
             <span>{message.error || '发送失败'}</span>
           </div>
         )}
         
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-xs text-gray-400">
-              {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </span>
-          <button
-            onClick={() => {
-              if (confirm('确定要删除这条消息吗？')) {
-                deleteMessage(message.id);
-              }
-            }}
-            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+          <Text type="secondary" style={{ fontSize: 10 }}>
+            {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+          <Popconfirm
             title="删除消息"
+            description="确定要删除这条消息吗？"
+            onConfirm={() => deleteMessage(message.id)}
+            okText="确定"
+            cancelText="取消"
+            okButtonProps={{ danger: true }}
           >
-            <Trash2 className="w-3 h-3" />
-          </button>
+            <Button
+              type="text"
+              size="small"
+              icon={<DeleteOutlined style={{ fontSize: 10 }} />}
+              className="text-gray-400 hover:text-red-500 p-0 h-4 w-4 flex items-center justify-center"
+            />
+          </Popconfirm>
         </div>
       </div>
     </div>
@@ -192,6 +224,7 @@ export const MessageItem = memo(MessageItemComponent, (prev, next) => {
     prev.message.content === next.message.content &&
     prev.message.status === next.message.status &&
     prev.message.model === next.message.model &&
+    prev.message.latency === next.message.latency &&
     prev.message.usage?.total_tokens === next.message.usage?.total_tokens
   );
 });

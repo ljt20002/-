@@ -32,6 +32,7 @@ export interface ChatMessage {
   error?: string;
   usage?: TokenUsage;
   model?: string;
+  latency?: number;
 }
 
 export interface ChatSession {
@@ -52,6 +53,7 @@ export interface AppConfig {
   systemPrompt?: string;
   searchEnabled: boolean;
   searchApiKey?: string;
+  optimizerModelId?: string; // 新增：提示词优化模型
 }
 
 export interface ModelOption {
@@ -94,4 +96,17 @@ export interface ChatCompletionChunk {
     };
     finish_reason: string | null;
   }[];
+}
+
+export interface CompareResponse {
+  modelId: string;
+  modelName: string;
+  content: string;
+  status: MessageStatus;
+  error?: string;
+  usage?: TokenUsage;
+  latency?: number;
+  finishedAt?: number; // 新增：完成时间戳
+  score?: number;
+  evaluation?: string;
 }

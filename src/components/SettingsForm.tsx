@@ -1,30 +1,45 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { useConfigStore } from '../store/useConfigStore';
 import { useChatStore } from '../store/useChatStore';
-import { RotateCcw, ChevronDown, Check } from 'lucide-react';
+import { 
+  Form, 
+  Select, 
+  Input, 
+  Switch, 
+  Button, 
+  Typography, 
+  Divider, 
+  Space, 
+  Tag, 
+  Tooltip 
+} from 'antd';
+import { 
+  ReloadOutlined, 
+  InfoCircleOutlined, 
+  SettingOutlined, 
+  GlobalOutlined, 
+  KeyOutlined, 
+  LinkOutlined, 
+  EditOutlined,
+  BulbOutlined
+} from '@ant-design/icons';
 import { AVAILABLE_MODELS } from '../lib/constants';
-import { cn } from '../lib/utils';
+
+const { Title, Text } = Typography;
+const { TextArea } = Input;
 
 export const SettingsForm: React.FC = () => {
   const { config, setConfig, resetConfig } = useConfigStore();
   const { sessions, currentSessionId, updateSessionModel, updateSessionSystemPrompt } = useChatStore();
-  const [isModelOpen, setIsModelOpen] = useState(false);
-  const modelDropdownRef = useRef<HTMLDivElement>(null);
 
   const currentSession = sessions.find(s => s.id === currentSessionId);
   const effectiveModel = currentSession?.model || config.model;
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setConfig({ [name]: value });
-  };
 
   const handleModelSelect = (modelId: string) => {
     if (currentSessionId) {
       updateSessionModel(currentSessionId, modelId);
     }
     setConfig({ model: modelId });
-    setIsModelOpen(false);
   };
 
   const handleSystemPromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -36,235 +51,197 @@ export const SettingsForm: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (modelDropdownRef.current && !modelDropdownRef.current.contains(event.target as Node)) {
-        setIsModelOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  const currentModel = AVAILABLE_MODELS.find(m => m.id === effectiveModel) || {
-    id: effectiveModel,
-    name: effectiveModel,
-    description: 'Custom model',
-    provider: 'Unknown'
-  };
-
-  return (
-    <div className="space-y-6 p-4 bg-white rounded-lg shadow-sm border border-gray-100 h-full flex flex-col">
-      <div className="flex items-center justify-between flex-shrink-0">
-        <h2 className="text-xl font-semibold text-gray-800">设置</h2>
-      </div>
-
-      <div className="space-y-8 flex-1 overflow-y-auto pr-1">
-        {/* 会话级设置 */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 pb-1 border-b border-gray-100">
-            <div className="w-1 h-4 bg-blue-600 rounded-full" />
-            <h3 className="text-sm font-bold text-gray-900">当前会话设置</h3>
-            {!currentSessionId && <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">未选定会话</span>}
-          </div>
-
-          <div className="relative" ref={modelDropdownRef}>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wider">
-              对话模型
-            </label>
-            <button
-              type="button"
-              disabled={!currentSessionId}
-              onClick={() => setIsModelOpen(!isModelOpen)}
-              className={cn(
-                "w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm flex items-center justify-between text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors",
-                !currentSessionId && "opacity-50 cursor-not-allowed bg-gray-50"
-              )}
-            >
-              <span className="truncate text-gray-900 font-medium">{currentModel.name}</span>
-              <ChevronDown className={cn("w-4 h-4 text-gray-500 transition-transform", isModelOpen && "transform rotate-180")} />
-            </button>
-
-            {isModelOpen && (
-              <div className="absolute z-50 mt-1 w-full bg-white shadow-xl rounded-md border border-gray-200 flex flex-col max-h-96 overflow-hidden">
-                <div className="overflow-y-auto py-1">
-                  {AVAILABLE_MODELS.map((model) => (
-                    <div
-                      key={model.id}
-                      className="group relative px-3 py-2.5 cursor-pointer hover:bg-blue-50 flex items-start justify-between transition-colors border-b border-gray-50 last:border-0"
-                      onClick={() => handleModelSelect(model.id)}
-                    >
-                      <div className="flex flex-col flex-1 mr-2 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className={cn("text-sm font-bold truncate", model.id === effectiveModel ? "text-blue-600" : "text-gray-900")}>
-                            {model.name}
-                          </span>
-                          {model.isFree && (
-                            <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold flex-shrink-0">
-                              免费
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="text-[11px] text-gray-500 line-clamp-2 mb-1.5 leading-relaxed">
-                          {model.description}
-                        </div>
-
-                        <div className="flex items-center justify-between text-[10px]">
-                          <span className="text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                            {model.provider}
-                          </span>
-                          {!model.isFree && (
-                            <div className="flex gap-3 font-mono">
-                              <span className="text-gray-500">In: <span className="text-gray-700">{model.inputPrice}</span></span>
-                              <span className="text-gray-500">Out: <span className="text-gray-700">{model.outputPrice}</span></span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      {model.id === effectiveModel && (
-                        <Check className="w-4 h-4 text-blue-600 flex-shrink-0 mt-1" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label htmlFor="systemPrompt" className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
-                系统提示词 (System Prompt)
-              </label>
-              {currentSessionId && (
-                <button
-                  type="button"
-                  onClick={() => updateSessionSystemPrompt(currentSessionId, config.systemPrompt || '')}
-                  className="text-[10px] text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors font-medium"
-                  title="恢复为全局默认提示词"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  恢复默认
-                </button>
-              )}
-            </div>
-            <textarea
-              id="systemPrompt"
-              name="systemPrompt"
-              disabled={!currentSessionId}
-              value={currentSession?.systemPrompt || ""}
-              onChange={handleSystemPromptChange}
-              placeholder="例如：你是一个资深的 Python 开发者..."
-              className={cn(
-                "w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors min-h-[120px] resize-none",
-                !currentSessionId && "opacity-50 cursor-not-allowed bg-gray-50 placeholder:text-gray-300"
-              )}
-            />
-            <p className="mt-1 text-[10px] text-gray-400 italic">
-              {currentSessionId ? "修改将实时应用于当前选中的会话。" : "请在侧边栏选择一个会话进行配置。"}
-            </p>
-          </div>
-        </section>
-
-        {/* 全局设置 */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 pb-1 border-b border-gray-100">
-            <div className="w-1 h-4 bg-gray-400 rounded-full" />
-            <h3 className="text-sm font-bold text-gray-900">全局默认设置</h3>
-          </div>
-
-          <div className="flex items-center justify-between p-3 bg-blue-50/50 rounded-lg border border-blue-100">
-            <div className="flex flex-col gap-0.5">
-              <label htmlFor="searchEnabled" className="text-sm font-bold text-blue-900 cursor-pointer">
-                联网搜索增强 (Serper)
-              </label>
-              <p className="text-[10px] text-blue-700/70 italic">启用后模型将实时搜索网页内容</p>
-            </div>
-            <input
-              type="checkbox"
-              id="searchEnabled"
-              name="searchEnabled"
-              checked={config.searchEnabled}
-              onChange={(e) => setConfig({ searchEnabled: e.target.checked })}
-              className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
-            />
-          </div>
-
-          {config.searchEnabled && (
-            <div>
-              <label htmlFor="searchApiKey" className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wider">
-                Serper API Key
-              </label>
-              <input
-                type="password"
-                id="searchApiKey"
-                name="searchApiKey"
-                value={config.searchApiKey}
-                onChange={handleChange}
-                placeholder="Serper API Key..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
-              />
+  const modelOptions = AVAILABLE_MODELS.map(model => ({
+    value: model.id,
+    label: (
+      <div className="flex flex-col py-1">
+        <div className="flex items-center gap-2">
+          <span className="font-bold">{model.name}</span>
+          {model.isFree && <Tag color="green" bordered={false} className="m-0 text-[10px]">免费</Tag>}
+        </div>
+        <div className="text-[11px] text-gray-500 line-clamp-1">{model.description}</div>
+        <div className="flex items-center justify-between mt-1">
+          <Tag className="m-0 text-[10px] scale-90 origin-left">{model.provider}</Tag>
+          {!model.isFree && (
+            <div className="text-[10px] text-gray-400 font-mono scale-90 origin-right">
+              {model.inputPrice} / {model.outputPrice}
             </div>
           )}
+        </div>
+      </div>
+    ),
+    searchText: model.name + model.provider + model.description
+  }));
 
-          <div>
-            <label htmlFor="apiKey" className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wider">
-              API Key
-            </label>
-            <input
-              type="password"
-              id="apiKey"
-              name="apiKey"
-              value={config.apiKey}
-              onChange={handleChange}
-              placeholder="sk-..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="baseUrl" className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wider">
-              Base URL
-            </label>
-            <input
-              type="text"
-              id="baseUrl"
-              name="baseUrl"
-              value={config.baseUrl}
-              onChange={handleChange}
-              placeholder="https://api.openai.com/v1"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="defaultSystemPrompt" className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wider">
-              新会话默认提示词
-            </label>
-            <textarea
-              id="defaultSystemPrompt"
-              name="systemPrompt"
-              value={config.systemPrompt}
-              onChange={(e) => setConfig({ systemPrompt: e.target.value })}
-              placeholder="新开启的会话将默认使用此提示词..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors min-h-[80px] resize-none"
-            />
-          </div>
-        </section>
+  return (
+    <div className="h-full flex flex-col bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between flex-shrink-0">
+        <Title level={4} style={{ margin: 0 }} className="flex items-center gap-2">
+          <SettingOutlined />
+          设置
+        </Title>
       </div>
 
-      <div className="pt-4 flex gap-3 flex-shrink-0 border-t border-gray-100">
-        <button
+      <div className="flex-1 overflow-y-auto p-4 no-scrollbar">
+        <Form layout="vertical">
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-4 bg-blue-600 rounded-full" />
+              <Text strong>当前会话设置</Text>
+              {!currentSessionId && (
+                <Tag color="default" className="text-[10px]">未选定会话</Tag>
+              )}
+            </div>
+
+            <Form.Item 
+              label={<Text type="secondary" className="text-xs uppercase tracking-wider">对话模型</Text>}
+            >
+              <Select
+                value={effectiveModel}
+                onChange={handleModelSelect}
+                options={modelOptions}
+                disabled={!currentSessionId}
+                dropdownStyle={{ maxHeight: 400 }}
+                optionLabelProp="label"
+                style={{ width: '100%' }}
+                placeholder="请选择模型"
+                optionFilterProp="searchText"
+              />
+            </Form.Item>
+
+            <Form.Item
+              label={
+                <div className="flex items-center justify-between w-full">
+                  <Text type="secondary" className="text-xs uppercase tracking-wider">系统提示词 (System Prompt)</Text>
+                  {currentSessionId && (
+                    <Button 
+                      type="link" 
+                      size="small" 
+                      icon={<ReloadOutlined style={{ fontSize: 10 }} />}
+                      onClick={() => updateSessionSystemPrompt(currentSessionId, config.systemPrompt || '')}
+                      className="text-[10px] p-0 h-auto"
+                    >
+                      恢复默认
+                    </Button>
+                  )}
+                </div>
+              }
+              extra={
+                <Text type="secondary" italic className="text-[10px]">
+                  {currentSessionId ? "修改将实时应用于当前选中的会话。" : "请在侧边栏选择一个会话进行配置。"}
+                </Text>
+              }
+            >
+              <TextArea
+                value={currentSession?.systemPrompt || ""}
+                onChange={handleSystemPromptChange}
+                disabled={!currentSessionId}
+                placeholder="例如：你是一个资深的 Python 开发者..."
+                autoSize={{ minRows: 4, maxRows: 8 }}
+                className="text-sm"
+              />
+            </Form.Item>
+          </div>
+
+          <Divider style={{ margin: '24px 0' }} />
+
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-4 bg-gray-400 rounded-full" />
+              <Text strong>全局默认设置</Text>
+            </div>
+
+            <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-100 mb-4 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-1">
+                  <Text strong className="text-blue-900">联网搜索增强</Text>
+                  <Tooltip title="基于 Serper API 实时搜索网页内容">
+                    <InfoCircleOutlined className="text-blue-400 text-xs" />
+                  </Tooltip>
+                </div>
+                <Text type="secondary" italic className="text-[10px] text-blue-700/70 block">启用后模型将实时搜索网页内容</Text>
+              </div>
+              <Switch 
+                checked={config.searchEnabled} 
+                onChange={(checked) => setConfig({ searchEnabled: checked })}
+                size="small"
+              />
+            </div>
+
+            {config.searchEnabled && (
+              <Form.Item 
+                label={<Text type="secondary" className="text-xs uppercase tracking-wider flex items-center gap-1"><GlobalOutlined /> Serper API Key</Text>}
+              >
+                <Input.Password
+                  value={config.searchApiKey}
+                  onChange={(e) => setConfig({ searchApiKey: e.target.value })}
+                  placeholder="Serper API Key..."
+                />
+              </Form.Item>
+            )}
+
+            <Form.Item 
+              label={<Text type="secondary" className="text-xs uppercase tracking-wider flex items-center gap-1"><KeyOutlined /> API Key</Text>}
+            >
+              <Input.Password
+                value={config.apiKey}
+                onChange={(e) => setConfig({ apiKey: e.target.value })}
+                placeholder="sk-..."
+              />
+            </Form.Item>
+
+            <Form.Item 
+              label={<Text type="secondary" className="text-xs uppercase tracking-wider flex items-center gap-1"><LinkOutlined /> Base URL</Text>}
+            >
+              <Input
+                value={config.baseUrl}
+                onChange={(e) => setConfig({ baseUrl: e.target.value })}
+                placeholder="https://api.openai.com/v1"
+              />
+            </Form.Item>
+
+            <Form.Item 
+              label={<Text type="secondary" className="text-xs uppercase tracking-wider flex items-center gap-1"><EditOutlined /> 新会话默认提示词</Text>}
+            >
+              <TextArea
+                value={config.systemPrompt}
+                onChange={(e) => setConfig({ systemPrompt: e.target.value })}
+                placeholder="新开启的会话将默认使用此提示词..."
+                autoSize={{ minRows: 3, maxRows: 6 }}
+              />
+            </Form.Item>
+
+            <Form.Item 
+              label={
+                <div className="flex items-center gap-1">
+                  <BulbOutlined className="text-purple-500" />
+                  <Text type="secondary" className="text-xs uppercase tracking-wider">提示词优化模型</Text>
+                </div>
+              }
+              extra={<Text type="secondary" italic className="text-[10px]">用于“优化提示词”功能的专用模型。</Text>}
+            >
+              <Select
+                value={config.optimizerModelId || AVAILABLE_MODELS[0].id}
+                onChange={(value) => setConfig({ optimizerModelId: value })}
+                options={modelOptions}
+                optionLabelProp="label"
+                style={{ width: '100%' }}
+                optionFilterProp="searchText"
+              />
+            </Form.Item>
+          </div>
+        </Form>
+      </div>
+
+      <div className="p-4 border-t border-gray-50 bg-gray-50/50 flex-shrink-0">
+        <Button 
+          block 
+          icon={<ReloadOutlined />} 
           onClick={resetConfig}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+          danger
         >
-          <RotateCcw className="w-4 h-4" />
           重置全局配置
-        </button>
+        </Button>
       </div>
     </div>
   );

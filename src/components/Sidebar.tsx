@@ -2,7 +2,17 @@ import React from 'react';
 import { useChatStore } from '../store/useChatStore';
 import { useConfigStore } from '../store/useConfigStore';
 import { cn } from '../lib/utils';
-import { Plus, MessageSquare, Trash2, X } from 'lucide-react';
+import { 
+  PlusOutlined, 
+  MessageOutlined, 
+  DeleteOutlined, 
+  CloseOutlined, 
+  NodeIndexOutlined 
+} from '@ant-design/icons';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Button, Typography, Popconfirm, Divider, Empty } from 'antd';
+
+const { Title, Text } = Typography;
 
 interface SidebarProps {
   isOpen: boolean;
@@ -10,6 +20,8 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { 
     sessions, 
     currentSessionId, 
@@ -18,6 +30,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     deleteSession 
   } = useChatStore();
   const { config } = useConfigStore();
+
+  const isComparePage = location.pathname === '/compare';
 
   return (
     <>
@@ -37,73 +51,112 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="font-bold text-lg text-gray-800">历史会话</h2>
-            <button 
+            <Title level={5} style={{ margin: 0 }} className="text-gray-800">
+              AI 助手
+            </Title>
+            <Button 
+              type="text"
+              icon={<CloseOutlined />}
               onClick={onClose}
-              className="p-1 hover:bg-gray-100 rounded lg:hidden"
-            >
-              <X className="w-5 h-5" />
-            </button>
+              className="lg:hidden"
+            />
           </div>
 
-          {/* New Chat Button */}
-          <div className="p-4">
-            <button
+          {/* Navigation */}
+          <div className="p-4 space-y-2">
+            <Button
+              type="primary"
+              block
+              icon={<PlusOutlined />}
               onClick={() => {
+                navigate('/');
                 createSession(undefined, config.model, config.systemPrompt);
                 if (window.innerWidth < 1024) onClose();
               }}
-              className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              size="large"
             >
-              <Plus className="w-4 h-4" />
-              <span>开启新会话</span>
-            </button>
+              开启新会话
+            </Button>
+
+            <Button
+              block
+              icon={<NodeIndexOutlined />}
+              onClick={() => {
+                navigate('/compare');
+                if (window.innerWidth < 1024) onClose();
+              }}
+              className={cn(
+                isComparePage && "bg-blue-50 text-blue-700 border-blue-200"
+              )}
+            >
+              模型对比
+            </Button>
+          </div>
+
+          <Divider style={{ margin: '8px 16px', width: 'auto', minWidth: 'auto' }} />
+          
+          <div className="px-4 py-2">
+            <Text type="secondary" className="text-xs font-semibold uppercase tracking-wider">
+              历史会话
+            </Text>
           </div>
 
           {/* Session List */}
-          <div className="flex-1 overflow-y-auto px-2 space-y-1">
+          <div className="flex-1 overflow-y-auto px-2 space-y-1 no-scrollbar">
             {sessions.map((session) => (
               <div
                 key={session.id}
                 className={cn(
-                  "group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors",
-                  currentSessionId === session.id 
+                  "group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors relative",
+                  !isComparePage && currentSessionId === session.id 
                     ? "bg-blue-50 text-blue-700" 
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 )}
                 onClick={() => {
+                  navigate('/');
                   switchSession(session.id);
                   if (window.innerWidth < 1024) onClose();
                 }}
               >
-                <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                <MessageOutlined className="text-sm flex-shrink-0" />
                 <span className="flex-1 truncate text-sm">
                   {session.title}
                 </span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (confirm('确定要删除这个会话吗？')) {
-                      deleteSession(session.id);
-                    }
+                <Popconfirm
+                  title="删除会话"
+                  description="确定要删除这个会话吗？"
+                  onConfirm={(e) => {
+                    e?.stopPropagation();
+                    deleteSession(session.id);
                   }}
-                  className="p-1 hover:bg-gray-200 rounded text-gray-400 hover:text-red-500 transition-all opacity-100"
+                  onCancel={(e) => e?.stopPropagation()}
+                  okText="确定"
+                  cancelText="取消"
+                  okButtonProps={{ danger: true }}
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    className="text-gray-400 hover:text-red-500 p-0 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </Popconfirm>
               </div>
             ))}
             
             {sessions.length === 0 && (
-              <div className="text-center py-10 text-gray-400 text-sm">
-                暂无会话
+              <div className="py-10">
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无会话" />
               </div>
             )}
           </div>
 
           {/* Footer Info */}
-          <div className="p-4 border-t border-gray-100 text-[10px] text-gray-400 text-center">
-            纯前端静态存储 · 历史记录保存在本地
+          <div className="p-4 border-t border-gray-100 bg-gray-50/30">
+            <Text type="secondary" className="text-[10px] block text-center italic">
+              纯前端静态存储 · 历史记录保存在本地
+            </Text>
           </div>
         </div>
       </div>

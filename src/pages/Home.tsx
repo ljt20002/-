@@ -10,6 +10,7 @@ import { streamChatCompletion } from '../lib/stream';
 import { searchWeb, analyzeSearchIntent, evaluateSearchSufficiency } from '../lib/search';
 import { AVAILABLE_MODELS } from '../lib/constants';
 import { Settings as SettingsIcon, Menu } from 'lucide-react';
+import { playNotificationSound } from '../lib/utils';
 import { MessageStatus, ContentPart } from '../types';
 
 interface HomeProps {
@@ -25,6 +26,7 @@ export default function Home({ onToggleSidebar }: HomeProps) {
     updateMessageStatus, 
     appendContentToMessage,
     setMessageUsage,
+    setMessageLatency,
     setLoading,
     abortResponse,
     getSignal,
@@ -105,6 +107,8 @@ export default function Home({ onToggleSidebar }: HomeProps) {
     const sessionId = currentSessionId;
     setLoading(true, sessionId!);
 
+    const startTime = Date.now();
+
     try {
       const signal = getSignal(sessionId!);
 
@@ -183,10 +187,15 @@ export default function Home({ onToggleSidebar }: HomeProps) {
           setMessageUsage(botMessageId, usage);
         },
         onFinish: () => {
+          const latency = Date.now() - startTime;
+          setMessageLatency(botMessageId, latency);
           updateMessageStatus(botMessageId, MessageStatus.SENT);
           setLoading(false, sessionId!);
+          playNotificationSound();
         },
         onError: (error) => {
+          const latency = Date.now() - startTime;
+          setMessageLatency(botMessageId, latency);
           if (error.name === 'AbortError') {
             updateMessageStatus(botMessageId, MessageStatus.SENT);
           } else {
