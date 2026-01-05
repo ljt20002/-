@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.1.0](https://github.com/ljt20002/-/compare/v2.0.0...v2.1.0) (2026-01-05)
+
+### ✨ 新功能
+
+* **模型设置:** 添加免费模型标记和价格显示 ([6c080ef](https://github.com/ljt20002/-/commit/6c080ef52d19546db562ea44aa55cb0898d11a4a))
+* **搜索:** 添加联网搜索功能支持，实现基于 Serper API 的联网搜索功能 ([89df81c](https://github.com/ljt20002/-/commit/89df81c264166152106588a52bc706347f17d54c))
+* **ChatInput:** 取消 Enter 键自动发送逻辑 ([5b42fdf](https://github.com/ljt20002/-/commit/5b42fdf7c15346e836ed5212b274512a506a9510))
+* **compare:** 新增模型对比功能及界面优化 ([a18965b](https://github.com/ljt20002/-/commit/a18965b7b74e7c2f13711e24c7144a0457b45a6e))
+
+### 🐛 缺陷修复
+
+* 清除冗余 ([b502aab](https://github.com/ljt20002/-/commit/b502aaba18dda8b946a145d06adcfb7158a3c6cc))
+* **SettingsForm:** 修复当config.systemPrompt为空时可能导致的错误 ([56fc62a](https://github.com/ljt20002/-/commit/56fc62a24a927f0c71b424d18a79c239cec3a29e))
+
 ## [2.0.0](https://github.com/ljt20002/-/compare/v1.1.0...v2.0.0) (2025-12-29)
 
 ### ✨ 新功能
