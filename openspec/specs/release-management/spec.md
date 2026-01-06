@@ -18,14 +18,14 @@ TBD - created by archiving change add-release-skill. Update Purpose after archiv
 - **那么** 系统提取提交信息并将其格式化为 Markdown 格式的更新日志条目
 
 ### Requirement: 项目版本更新
-在用户批准推荐的版本后，系统必须 (SHALL) 更新 `package.json` 中的 `version` 字段。
+在用户批准拟定的建议后，系统必须 (SHALL) 更新 `package.json` 中的 `version` 字段。
 
-#### Scenario: 更新 package.json 版本
-- **当** 用户确认推荐的版本号时
-- **那么** 系统将新版本号写入 `package.json`
+#### Scenario: 批准后更新
+- **当** 用户批准建议的版本号时
+- **那么** 系统执行物理文件写入
 
 ### Requirement: 全自动发布执行
-系统必须 (SHALL) 在获得用户确认后，主动执行本地提交、打标签和远程推送的完整 Git 操作流。
+系统必须 (SHALL) 在获得用户对建议和 Git 命令的确认后，主动执行文件修改、本地提交、打标签和远程推送的闭环。
 
 #### Scenario: 自动化 Git 闭环
 - **当** 用户批准版本和更新日志内容后
