@@ -13,7 +13,7 @@ description: 用于自动化项目的发布流程。它能分析当前代码与�
 2.  **版本推荐**：根据变更的影响范围（破坏性变更、新功能、修复）推荐 Major、Minor 或 Patch 版本。
 3.  **自动更新**：更新 `package.json` 中的版本号。
 4.  **日志生成**：在 `CHANGELOG.md` 中生成结构化的中文变更记录。
-5.  **全自动 Git 闭环**：在用户确认后，主动执行 `git commit`、`git tag` 和 `git push`。
+5.  **全自动 Git 闭环**：在用户确认后，主动生成包含变更摘要的 `git commit`、`git tag` 和 `git push`。
 
 ## 使用流程
 

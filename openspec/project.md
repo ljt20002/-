@@ -20,6 +20,7 @@
 - **跨文件校验**：当同时创建或修改多个文档（如 `SKILL.md` 与 `workflow.md`，或 `proposal.md` 与 `spec.md`）时，必须执行显式的交叉核对。
 - **自动化边界定义**：在任何文档中提到的“自动 (Auto)”或“手动 (Manual)”步骤，必须在所有相关文档中保持完全一致的定义。
 - **单事实来源**：如果两份文档存在冲突，以 `OpenSpec` 提案中的 `proposal.md` 和 `spec.md` 为准，其他文档必须同步更新。
+- **发布诚信 (Release Integrity)**：发布新版本是项目的最高等级变更。系统必须确保版本号（package.json）与记录（CHANGELOG.md）在 Git Tag 动作前完成物理写入并经过双重检查。
 
 ### Code Style
 - **Components**: 优先使用函数组件和 React Hooks。

@@ -8,6 +8,7 @@ Instructions for AI coding assistants using OpenSpec for spec-driven development
 - [ ] 所有关联文档（SKILL.md, workflow.md, proposal.md）中的定义是否一致？
 - [ ] 自动化与手动的边界在各处描述是否完全同步？
 - [ ] 是否在任务列表中包含了“交叉比对”步骤？
+- [ ] **(CRITICAL) 发布校验**：在执行 `git commit` 或 `git tag` 发布版本前，必须通过 `Read` 或 `git diff` 显式确认 `package.json` 和 `CHANGELOG.md` 的内容已正确更新。严禁在未校验的情况下执行发布。
 
 ## TL;DR Quick Checklist
 

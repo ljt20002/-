@@ -23,14 +23,16 @@ git log $(git describe --tags --abbrev=0)..HEAD --oneline
 1. 修改 `package.json` 中的 `version` 字段。
 2. 在 `CHANGELOG.md` 顶部插入新版本信息。
 3. 按照“✨ 新功能”、“🐛 缺陷修复”、“🔧 内部重构”等类别整理变更点。
+4. **强制校验 (Critical Check)**：在执行 Git 提交前，必须运行 `cat package.json` 和 `head CHANGELOG.md` 确保物理文件内容已更新。
 
 ## 5. 全自动发布执行 (Automated Execution)
 在用户批准版本推荐和更新日志后，AI 必须主动引导并执行以下操作：
 
 1. **执行文件更新**：更新 `package.json` 和 `CHANGELOG.md`。
 2. **本地提交**：
+   AI 必须根据本次发布的变更核心（参考 CHANGELOG 摘要）生成描述性的提交信息。
    ```bash
-   git add . && git commit -m "chore: release vX.X.X"
+   git add . && git commit -m "chore: release vX.X.X (包含简短的变更摘要)"
    ```
 3. **创建标签**：
    ```bash
