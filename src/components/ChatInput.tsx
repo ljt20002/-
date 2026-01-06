@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   SendOutlined, 
   ClearOutlined, 
@@ -7,9 +7,10 @@ import {
   StopOutlined, 
   GlobalOutlined, 
   ThunderboltOutlined, 
+  UndoOutlined,
   LoadingOutlined 
 } from '@ant-design/icons';
-import { Button, Input, Tooltip, Space, Badge, message } from 'antd';
+import { Button, Input, Tooltip, Badge, message } from 'antd';
 import { cn, playNotificationSound } from '../lib/utils';
 import { useConfigStore } from '../store/useConfigStore';
 import { streamChatCompletion } from '../lib/stream';
@@ -39,6 +40,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 }) => {
   const { config, setConfig } = useConfigStore();
   const [internalContent, setInternalContent] = useState('');
+  const [lastOriginalContent, setLastOriginalContent] = useState<string | null>(null);
   const [images, setImages] = useState<string[]>([]);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -61,6 +63,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       return;
     }
 
+    setLastOriginalContent(content);
     setIsOptimizing(true);
     let optimizedContent = '';
     
@@ -100,6 +103,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     onSend(content, images);
     setContent('');
     setImages([]);
+    setLastOriginalContent(null);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,6 +205,20 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                   className={cn(isOptimizing ? "bg-purple-50" : "text-gray-400")}
                 />
               </Tooltip>
+
+              {lastOriginalContent && (
+                <Tooltip title="撤销优化">
+                  <Button
+                    type="text"
+                    icon={<UndoOutlined />}
+                    onClick={() => {
+                      setContent(lastOriginalContent);
+                      setLastOriginalContent(null);
+                    }}
+                    className="text-orange-400 hover:text-orange-600"
+                  />
+                </Tooltip>
+              )}
             </div>
             
             <TextArea

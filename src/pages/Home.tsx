@@ -6,8 +6,8 @@ import { ChatInput } from '../components/ChatInput';
 import { BillingBar } from '../components/BillingBar';
 import { Empty } from '../components/Empty';
 import { SettingsDrawer } from '../components/SettingsDrawer';
-import { streamChatCompletion } from '../lib/stream';
-import { searchWeb, analyzeSearchIntent, evaluateSearchSufficiency } from '../lib/search';
+import { createChatAgent, convertToLangChainMessages } from '../lib/langchain/agent';
+import { assembleContextMessages } from '../lib/context';
 import { AVAILABLE_MODELS } from '../lib/constants';
 import { Settings as SettingsIcon, Menu } from 'lucide-react';
 import { playNotificationSound } from '../lib/utils';
@@ -19,7 +19,7 @@ interface HomeProps {
 
 export default function Home({ onToggleSidebar }: HomeProps) {
   const { config } = useConfigStore();
-  const { 
+    const { 
     sessions,
     currentSessionId,
     addMessage, 
@@ -30,7 +30,8 @@ export default function Home({ onToggleSidebar }: HomeProps) {
     setLoading,
     abortResponse,
     getSignal,
-    clearMessages
+    clearMessages,
+    updateSessionSummary
   } = useChatStore();
   
   const currentSession = useMemo(() => 
@@ -111,102 +112,66 @@ export default function Home({ onToggleSidebar }: HomeProps) {
 
     try {
       const signal = getSignal(sessionId!);
+      const executor = createChatAgent({ ...config, model: sessionModel }, systemPrompt);
+      const chatHistory = assembleContextMessages(validHistory, config, currentSession?.contextSummary);
+      
+      // 转换当前消息为 LangChain 格式
+      const currentMessageLC = convertToLangChainMessages([{
+        id: 'current',
+        role: 'user',
+        content: finalContent,
+        timestamp: Date.now(),
+        status: MessageStatus.SENT
+      }])[0];
 
-      // Perform web search if enabled
-      let searchResults = '';
-      if (config.searchEnabled && config.searchApiKey && content.trim()) {
-        try {
-          appendContentToMessage(botMessageId, '> 🤖 正在分析搜索意图...\n\n');
-          const initialQueries = await analyzeSearchIntent(content, config);
-          
-          if (initialQueries && initialQueries.length > 0) {
-            let iteration = 0;
-            const maxIterations = 2; // 最多进行2轮搜索迭代
-            let currentQueries = initialQueries;
-            
-            while (iteration < maxIterations) {
-              iteration++;
-              const roundInfo = maxIterations > 1 ? ` (第 ${iteration} 轮)` : '';
-              appendContentToMessage(botMessageId, `> 🔍 正在执行搜索${roundInfo}: ${currentQueries.join(', ')}...\n\n`);
-              
-              // 并行执行当前轮次的所有搜索词
-              const roundResults = await Promise.all(
-                currentQueries.map(q => searchWeb(q))
-              );
-              const roundResultsText = roundResults.join('\n\n');
-              searchResults += (searchResults ? '\n\n' : '') + roundResultsText;
+      const eventStream = executor.streamEvents(
+        { 
+          messages: [...chatHistory, currentMessageLC]
+        },
+        { version: "v2", signal }
+      );
 
-              if (iteration < maxIterations) {
-                appendContentToMessage(botMessageId, `> 🧠 正在评估搜索结果是否充足...\n\n`);
-                const evaluation = await evaluateSearchSufficiency(content, searchResults, config);
-                
-                if (evaluation.sufficient) {
-                  appendContentToMessage(botMessageId, `> ✅ 信息已充足，开始生成回答...\n\n`);
-                  break;
-                } else if (evaluation.nextQuery) {
-                  appendContentToMessage(botMessageId, `> 💡 发现信息缺口，追加搜索: ${evaluation.nextQuery}...\n\n`);
-                  currentQueries = [evaluation.nextQuery];
-                } else {
-                  break;
-                }
-              } else {
-                appendContentToMessage(botMessageId, `> ✅ 搜索轮次已达上限，开始总结...\n\n`);
-              }
-            }
-          } else {
-            appendContentToMessage(botMessageId, '> ⚡ 意图识别：无需联网，直接回答...\n\n');
+      for await (const event of eventStream) {
+        const eventType = event.event;
+        
+        if (eventType === "on_tool_start") {
+          appendContentToMessage(botMessageId, `> 🔍 正在执行搜索: ${event.data.input}...\n\n`);
+        } else if (eventType === "on_chat_model_stream") {
+          const content = event.data?.chunk?.content;
+          if (content) {
+            appendContentToMessage(botMessageId, content);
           }
-        } catch (searchError) {
-          console.error('Agentic search failed:', searchError);
-          appendContentToMessage(botMessageId, '> ❌ 联网搜索过程出错，将基于现有知识回答...\n\n');
+        } else if (eventType === "on_chat_model_end") {
+           // 处理消耗数据
+           const usage = event.data?.output?.usage_metadata;
+           if (usage) {
+             setMessageUsage(botMessageId, {
+               prompt_tokens: usage.input_tokens,
+               completion_tokens: usage.output_tokens,
+               total_tokens: usage.total_tokens
+             });
+           }
         }
       }
 
-      const promptWithSearch = searchResults 
-        ? (Array.isArray(finalContent)
-            ? [
-                { type: 'text' as const, text: `以下是关于“${content}”的网络搜索结果：\n\n${searchResults}\n\n请结合以上资料回答用户的问题。` },
-                ...finalContent.filter(p => p.type === 'image_url')
-              ]
-            : `以下是关于“${content}”的网络搜索结果：\n\n${searchResults}\n\n请结合以上资料回答用户的问题。`
-          )
-        : finalContent;
+      const latency = Date.now() - startTime;
+      setMessageLatency(botMessageId, latency);
+      updateMessageStatus(botMessageId, MessageStatus.SENT);
+      setLoading(false, sessionId!);
+      playNotificationSound();
 
-      await streamChatCompletion({
-        config: { ...config, model: sessionModel },
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...validHistory, 
-          { role: 'user', content: promptWithSearch }
-        ], 
-        signal,
-        onChunk: (chunk) => {
-          appendContentToMessage(botMessageId, chunk);
-        },
-        onUsage: (usage) => {
-          setMessageUsage(botMessageId, usage);
-        },
-        onFinish: () => {
-          const latency = Date.now() - startTime;
-          setMessageLatency(botMessageId, latency);
-          updateMessageStatus(botMessageId, MessageStatus.SENT);
-          setLoading(false, sessionId!);
-          playNotificationSound();
-        },
-        onError: (error) => {
-          const latency = Date.now() - startTime;
-          setMessageLatency(botMessageId, latency);
-          if (error.name === 'AbortError') {
-            updateMessageStatus(botMessageId, MessageStatus.SENT);
-          } else {
-            updateMessageStatus(botMessageId, MessageStatus.ERROR, error.message);
-          }
-          setLoading(false, sessionId!);
-        },
-      });
+      // 异步触发摘要更新
+      updateSessionSummary(sessionId!);
     } catch (error) {
-      console.error('Failed to send message:', error);
-      updateMessageStatus(botMessageId, MessageStatus.ERROR, '发送请求失败');
+      const latency = Date.now() - startTime;
+      setMessageLatency(botMessageId, latency);
+      
+      if (error instanceof Error && error.name === 'AbortError') {
+        updateMessageStatus(botMessageId, MessageStatus.SENT);
+      } else {
+        console.error('Failed to send message:', error);
+        updateMessageStatus(botMessageId, MessageStatus.ERROR, error instanceof Error ? error.message : '发送请求失败');
+      }
       setLoading(false, sessionId!);
     }
   };

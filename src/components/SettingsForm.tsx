@@ -9,9 +9,9 @@ import {
   Button, 
   Typography, 
   Divider, 
-  Space, 
   Tag, 
-  Tooltip 
+  Tooltip,
+  InputNumber 
 } from 'antd';
 import { 
   ReloadOutlined, 
@@ -229,6 +229,69 @@ export const SettingsForm: React.FC = () => {
                 optionFilterProp="searchText"
               />
             </Form.Item>
+
+            <Divider style={{ margin: '24px 0' }} />
+
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-4 bg-purple-400 rounded-full" />
+                <Text strong>上下文优化设置</Text>
+                <Tooltip title="长对话场景下，通过智能压缩或滑动窗口减少 Token 消耗并避免超出限制。">
+                  <InfoCircleOutlined className="text-gray-400 text-xs" />
+                </Tooltip>
+              </div>
+
+              <Form.Item 
+                label={<Text type="secondary" className="text-xs uppercase tracking-wider">优化策略</Text>}
+                extra={<Text type="secondary" italic className="text-[10px]">
+                  {config.contextStrategy === 'auto' ? "智能摘要：自动总结中间对话，保留长期记忆。" : 
+                  config.contextStrategy === 'sliding' ? "滑动窗口：仅保留最近的原始消息。" : "全量：发送所有历史消息（可能超出限制）。"}
+                </Text>}
+              >
+                <Select
+                  value={config.contextStrategy}
+                  onChange={(value) => setConfig({ contextStrategy: value as any })}
+                  options={[
+                    { value: 'none', label: '全量发送 (None)' },
+                    { value: 'sliding', label: '滑动窗口 (Sliding Window)' },
+                    { value: 'auto', label: '智能摘要 (Auto Summary)' },
+                  ]}
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+
+              {config.contextStrategy !== 'none' && (
+                <div className="space-y-4">
+                  <Form.Item 
+                    label={<Text type="secondary" className="text-xs uppercase tracking-wider">保留最近消息数</Text>}
+                    style={{ marginBottom: 0 }}
+                  >
+                    <InputNumber
+                      min={1}
+                      max={50}
+                      value={config.maxRecentMessages}
+                      onChange={(value) => setConfig({ maxRecentMessages: value || 10 })}
+                      style={{ width: '100%' }}
+                    />
+                  </Form.Item>
+
+                  {config.contextStrategy === 'auto' && (
+                    <Form.Item 
+                      label={<Text type="secondary" className="text-xs uppercase tracking-wider">增量总结间隔</Text>}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <InputNumber
+                        min={5}
+                        max={50}
+                        value={config.summaryUpdateInterval}
+                        onChange={(value) => setConfig({ summaryUpdateInterval: value || 10 })}
+                        style={{ width: '100%' }}
+                      />
+                    </Form.Item>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </Form>
       </div>

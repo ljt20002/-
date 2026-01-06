@@ -44,6 +44,8 @@ export interface ChatSession {
   model: string;
   systemPrompt?: string;
   isLoading?: boolean;
+  contextSummary?: string; // 新增：持久化上下文摘要
+  lastSummarizedMessageIndex?: number; // 新增：最后一次总结的消息索引
 }
 
 export interface AppConfig {
@@ -54,6 +56,9 @@ export interface AppConfig {
   searchEnabled: boolean;
   searchApiKey?: string;
   optimizerModelId?: string; // 新增：提示词优化模型
+  contextStrategy: 'none' | 'sliding' | 'auto'; // 新增：上下文优化策略
+  maxRecentMessages: number; // 新增：保留的最近原始消息数量
+  summaryUpdateInterval: number; // 新增：触发总结的消息间隔
 }
 
 export interface ModelOption {

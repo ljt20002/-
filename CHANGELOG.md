@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.2.0](https://github.com/ljt20002/-/compare/v2.1.0...v2.2.0) (2026-01-06)
+
+### ✨ 新功能
+
+* **OpenSpec:** 引入规范驱动开发流程及中文语言策略
+* **LangChain:** 集成 LangChain 框架以增强 Agent 能力
+* **发布管理:** 新增全自动版本推荐与更新日志生成技能
+* **上下文管理:** 优化长对话上下文处理逻辑与性能
+
+### 🔧 内部重构
+
+* 重构 Agent 工具调用逻辑至 LangChain
+* 优化 Zustand 状态存储实现
+
 ## [2.1.0](https://github.com/ljt20002/-/compare/v2.0.0...v2.1.0) (2026-01-05)
 
 ### ✨ 新功能

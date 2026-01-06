@@ -9,7 +9,7 @@ import { CompareAnalysis } from '../components/CompareAnalysis';
 import { MessageStatus } from '../types';
 import { Plus, Copy, Trash2, LayoutGrid, LayoutList, CheckCircle2, AlertCircle, Loader2, Menu, Settings as SettingsIcon, Wand2, Gavel, Sparkles, ChevronDown, Star, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { Tooltip, Progress, Space, Typography, Badge, Switch, Select } from 'antd';
+import { Tooltip, Typography, Badge, Switch, Select } from 'antd';
 import { ClockCircleOutlined, BarChartOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -20,9 +20,8 @@ interface ComparePageProps {
 
 const ComparisonProgressBar: React.FC<{ 
   selectedModelIds: string[], 
-  responses: Record<string, any>,
-  isComparing: boolean 
-}> = ({ selectedModelIds, responses, isComparing }) => {
+  responses: Record<string, any> 
+}> = ({ selectedModelIds, responses }) => {
   if (selectedModelIds.length === 0) return null;
 
   // 按完成顺序排序：已完成的（SENT/ERROR）按 finishedAt 排序，然后是 RECEIVING，最后是 PENDING
@@ -58,7 +57,7 @@ const ComparisonProgressBar: React.FC<{
   return (
     <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center gap-3 shadow-sm sticky top-0 z-20">
       <div className="flex-shrink-0 flex items-center gap-2">
-        <Text strong size="small" type="secondary" className="text-[10px] uppercase tracking-wider">生成进度</Text>
+        <Text strong type="secondary" className="text-[10px] uppercase tracking-wider">生成进度</Text>
         <Badge 
           count={`${Object.values(responses).filter(r => r.status === MessageStatus.SENT || r.status === MessageStatus.ERROR).length}/${selectedModelIds.length}`} 
           style={{ backgroundColor: '#52c41a', fontSize: '10px' }}
@@ -433,7 +432,6 @@ const Compare: React.FC<ComparePageProps> = ({ onToggleSidebar }) => {
       <ComparisonProgressBar 
         selectedModelIds={selectedModelIds} 
         responses={responses} 
-        isComparing={isComparing} 
       />
 
       {/* Main Content */}

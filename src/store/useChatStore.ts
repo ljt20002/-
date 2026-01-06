@@ -29,6 +29,7 @@ interface ChatState {
   setLoading: (loading: boolean, sessionId?: string) => void;
   abortResponse: (sessionId?: string) => void;
   getSignal: (sessionId?: string) => AbortSignal | undefined;
+  updateSessionSummary: (sessionId: string) => Promise<void>;
 }
 
 // 存储各个会话的 AbortController
@@ -66,6 +67,7 @@ export const useChatStore = create<ChatState>()(
           model: model || config.model,
           systemPrompt: systemPrompt || config.systemPrompt || 'You are a helpful AI assistant.',
           isLoading: false,
+          lastSummarizedMessageIndex: 0,
         };
         set((state) => ({
           sessions: [newSession, ...state.sessions],
@@ -274,9 +276,69 @@ export const useChatStore = create<ChatState>()(
         const targetId = sessionId || get().currentSessionId;
         return targetId ? abortControllers.get(targetId)?.signal : undefined;
       },
+
+      updateSessionSummary: async (sessionId) => {
+        const state = get();
+        const session = state.sessions.find(s => s.id === sessionId);
+        if (!session || session.isLoading) return;
+
+        const config = useConfigStore.getState().config;
+        if (config.contextStrategy !== 'auto') {
+          console.log(`[Store] 摘要跳过: 当前策略为 ${config.contextStrategy}, 仅 auto 模式执行摘要`);
+          return;
+        }
+
+        const allMessages = session.messages.filter(m => m.status === MessageStatus.SENT);
+        const lastIndex = session.lastSummarizedMessageIndex || 0;
+        
+        // 我们保留最后 maxRecentMessages 条消息不进行总结
+        const messagesToSummarize = allMessages.slice(lastIndex, -config.maxRecentMessages);
+        
+        console.log(`[Store] 摘要检查: 总成功消息 ${allMessages.length}, 已总结至 ${lastIndex}, 待总结 ${messagesToSummarize.length}, 触发阈值 ${config.summaryUpdateInterval}`);
+
+        if (messagesToSummarize.length < config.summaryUpdateInterval) {
+          console.log(`[Store] 摘要跳过: 待总结消息数未达到阈值`);
+          return;
+        }
+
+        try {
+          const { generateSummary } = await import('../lib/context');
+          const newSummary = await generateSummary(config, session.contextSummary, messagesToSummarize);
+          
+          set((state) => ({
+            sessions: state.sessions.map((s) =>
+              s.id === sessionId 
+                ? { 
+                    ...s, 
+                    contextSummary: newSummary, 
+                    lastSummarizedMessageIndex: lastIndex + messagesToSummarize.length,
+                    updatedAt: Date.now() 
+                  } 
+                : s
+            ),
+          }));
+          console.log(`[Store] 摘要更新成功: 已同步至索引 ${lastIndex + messagesToSummarize.length}`);
+        } catch (error) {
+          console.error('[Store] 摘要更新失败:', error);
+        }
+      },
     }),
     {
       name: 'chat-sessions',
+      version: 1,
+      migrate: (persistedState: any, version: number) => {
+        if (version === 0) {
+          const state = persistedState as ChatState;
+          return {
+            ...state,
+            sessions: state.sessions.map(s => ({
+              ...s,
+              lastSummarizedMessageIndex: 0,
+            }))
+          };
+        }
+        return persistedState;
+      },
       storage: createJSONStorage(() => idbStorage),
       partialize: (state) => ({
         sessions: state.sessions.map(s => cleanupSessionMessages(s)), // 持久化前清理状态

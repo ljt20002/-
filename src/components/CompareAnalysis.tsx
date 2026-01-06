@@ -6,7 +6,6 @@ import {
   DollarOutlined, 
   BarChartOutlined,
   DashboardOutlined,
-  FieldTimeOutlined,
   WarningOutlined
 } from '@ant-design/icons';
 import { Column, Bar } from '@ant-design/plots';
@@ -25,7 +24,6 @@ interface CompareAnalysisProps {
 export const CompareAnalysis: React.FC<CompareAnalysisProps> = ({
   isOpen,
   onClose,
-  selectedModelIds,
   responses
 }) => {
   const completedResponses = useMemo(() => {
@@ -200,14 +198,14 @@ export const CompareAnalysis: React.FC<CompareAnalysisProps> = ({
             </Col>
           </Row>
 
-          <Divider orientation="left">质量表现对比</Divider>
+          <Divider>质量表现对比</Divider>
           <Card bordered={false} className="shadow-sm">
             <div className="h-[300px]">
               <Column {...costScoreConfig} />
             </div>
           </Card>
 
-          <Divider orientation="left">产出流畅度 (Tokens/s)</Divider>
+          <Divider>产出流畅度 (Tokens/s)</Divider>
           <Card bordered={false} className="shadow-sm">
             <div className="h-[300px]">
               <Bar {...throughputConfig} />
