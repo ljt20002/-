@@ -69,6 +69,9 @@ pnpm build
 3. **确认发布**: `release-it` 会自动更新 `package.json` 版本号，提取提交记录到 `CHANGELOG.md`，执行 Git Commit 并打上对应的版本 Tag。
 
 ## 📂 项目结构
+
+关于项目的详细技术实现脉络与知识库，请参阅 [docs/KNOWLEDGE_BASE.md](./docs/KNOWLEDGE_BASE.md)。
+
 ```text
 src/
 ├── components/   # 核心组件 (对话列表、输入框、设置抽屉等)
